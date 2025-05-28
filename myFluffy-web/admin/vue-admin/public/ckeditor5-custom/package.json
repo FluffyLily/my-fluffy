@@ -1,0 +1,52 @@
+{
+  "name": "ckeditor5-custom",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --config webpack.config.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@ckeditor/ckeditor5-alignment": "^45.0.0",
+    "@ckeditor/ckeditor5-autoformat": "^45.0.0",
+    "@ckeditor/ckeditor5-basic-styles": "^45.0.0",
+    "@ckeditor/ckeditor5-block-quote": "^45.0.0",
+    "@ckeditor/ckeditor5-code-block": "^45.0.0",
+    "@ckeditor/ckeditor5-editor-classic": "^45.0.0",
+    "@ckeditor/ckeditor5-essentials": "^45.0.0",
+    "@ckeditor/ckeditor5-find-and-replace": "^45.0.0",
+    "@ckeditor/ckeditor5-font": "^45.0.0",
+    "@ckeditor/ckeditor5-heading": "^45.0.0",
+    "@ckeditor/ckeditor5-highlight": "^45.0.0",
+    "@ckeditor/ckeditor5-horizontal-line": "^45.0.0",
+    "@ckeditor/ckeditor5-image": "^45.0.0",
+    "@ckeditor/ckeditor5-indent": "^45.0.0",
+    "@ckeditor/ckeditor5-link": "^45.0.0",
+    "@ckeditor/ckeditor5-list": "^45.0.0",
+    "@ckeditor/ckeditor5-media-embed": "^45.0.0",
+    "@ckeditor/ckeditor5-paragraph": "^45.0.0",
+    "@ckeditor/ckeditor5-paste-from-office": "^45.0.0",
+    "@ckeditor/ckeditor5-special-characters": "^45.0.0",
+    "@ckeditor/ckeditor5-table": "^45.0.0",
+    "@ckeditor/ckeditor5-typing": "^45.0.0",
+    "@ckeditor/ckeditor5-upload": "^45.0.0",
+    "@ckeditor/ckeditor5-word-count": "^45.0.0"
+  },
+  "devDependencies": {
+    "@ckeditor/ckeditor5-dev-webpack-plugin": "^31.1.13",
+    "autoprefixer": "^10.4.21",
+    "css-loader": "^7.1.2",
+    "postcss": "^8.5.3",
+    "postcss-import": "^16.1.0",
+    "postcss-loader": "^8.1.1",
+    "postcss-nesting": "^13.0.1",
+    "raw-loader": "^4.0.2",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.99.5",
+    "webpack-cli": "^6.0.1"
+  }
+}

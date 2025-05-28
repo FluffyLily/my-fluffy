@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.renee328.mapper.UserMapper">
+    <!-- 이메일로 사용자 조회 -->
+    <select id="findByEmail" parameterType="string" resultType="com.renee328.dto.UserDto">
+        SELECT
+            USER_ID,
+            USER_NAME,
+            LOGIN_ID,
+            LOGIN_PASSWORD,
+            EMAIL,
+            PHONE_NUMBER,
+            LAST_PASSWORD_CHANGE_AT,
+            PASSWORD_ERROR_COUNT,
+            LOGIN_COUNT,
+            LAST_LOGIN_AT,
+            USER_TYPE_CODE,
+            CREATED_AT,
+            CREATED_BY,
+            UPDATED_AT,
+            UPDATED_BY,
+            DEVICE_ID,
+            UUID
+        FROM user
+        WHERE EMAIL = #{email}
+        LIMIT 1
+    </select>
+
+    <!-- 사용자 등록 -->
+    <insert id="insertUser" parameterType="com.renee328.dto.UserDto" useGeneratedKeys="true" keyProperty="userId">
+        INSERT INTO user (
+            USER_NAME,
+            LOGIN_ID,
+            LOGIN_PASSWORD,
+            EMAIL,
+            PHONE_NUMBER,
+            USER_TYPE_CODE,
+            CREATED_AT,
+            CREATED_BY,
+            UPDATED_AT,
+            UPDATED_BY,
+            DEVICE_ID,
+            UUID
+        ) VALUES (
+                     #{userName},
+                     #{loginId},
+                     #{loginPassword},
+                     #{email},
+                     #{phoneNumber},
+                     #{userTypeCode},
+                     NOW(),
+                     #{createdBy},
+                     NOW(),
+                     #{updatedBy},
+                     #{deviceId},
+                     #{uuid}
+                 )
+    </insert>
+</mapper>

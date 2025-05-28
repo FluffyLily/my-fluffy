@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.renee328.mapper.PostTagMapper">
+
+    <insert id="insertPostTag" parameterType="map">
+        INSERT IGNORE INTO post_tag (POST_ID, TAG_ID)
+        VALUES (#{postId}, #{tagId})
+    </insert>
+
+    <delete id="deleteByPostId" parameterType="long">
+        DELETE FROM post_tag WHERE POST_ID = #{postId}
+    </delete>
+
+</mapper>

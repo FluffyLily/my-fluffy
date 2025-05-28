@@ -1,0 +1,596 @@
+<template>
+  <div class="page-wrapper">
+    <div class="page-container">
+      <div class="page-content">
+        <h1 class="main-title">게시글 관리</h1>
+        <div class="filter-section">
+          <div class="filter-item">
+            <select v-model="searchCondition.boardId" @change="fetchPosts" class="instant-filter">
+              <option :value="null">전체 게시판</option>
+              <option v-for="board in boards" :key="board.boardId" :value="board.boardId">
+                {{ board.boardName }}
+              </option>
+            </select>
+          </div>
+      
+          <div class="filter-item">
+            <select v-model="searchCondition.sort" @change="fetchPosts" class="instant-filter">
+              <option value="recent">최신순</option>
+              <option value="old">오래된순</option>
+            </select>
+          </div>
+      
+          <div class="filter-item search-group">
+            <select v-model="searchCondition.searchType">
+              <option :value="null" disabled selected>검색 조건</option>
+              <option value="titleContent">제목+내용</option>
+              <option value="title">제목</option>
+              <option value="content">내용</option>
+              <option value="authorName">작성자</option>
+              <option value="postCategory">태그</option>
+            </select>
+            <input
+              type="text"
+              v-model="searchCondition.searchKeyword"
+              @keyup.enter="fetchPosts"
+              placeholder="검색어 입력"
+            />
+            <div class="checkbox-wrapper">
+              <input
+                type="checkbox"
+                v-model="searchCondition.isVisible"
+              />
+              <label>비노출 글 제외</label>
+            </div>
+            <button @click="fetchPosts">검색</button>
+            <button class="reset-button" @click="resetSearch">초기화</button>
+          </div>
+        </div>
+
+        <div class="write-button mb-3">
+          <button @click="goToWritePost">글쓰기</button>
+        </div>
+
+        <div class="post-list-content">
+          <div v-if="posts && posts.length === 0">게시글이 없습니다.</div>
+          <table class="post-list-table" v-if="posts && posts.length > 0">
+            <thead>
+              <tr>
+                <th>게시판</th>
+                <th>태그</th>
+                <th>제목</th>
+                <th>작성자</th>
+                <th>등록일</th>
+                <th>수정일</th>
+                <th>노출 상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="post in posts"
+                :key="post.postId"
+                @click="goToPost(post)"
+                :class="{ focused: focusedId === post.postId }"
+              >
+                <td><span class="board-tag" :class="getBoardColorClass(post.boardName)">{{ post.boardName }}</span></td>
+                <td>
+                  <template v-if="post.postCategoryString">
+                    <span
+                      v-for="(tag, index) in post.postCategoryString.split(',')"
+                      :key="index"
+                      class="category-tag"
+                    >#{{ tag.trim() }}</span>
+                  </template>
+                </td>
+                <td class="title-cell">{{ post.title }}</td>
+                <td>{{ post.createdByName }}</td>
+                <td>{{ formatDate(post.createdAt) }}</td>
+                <td>{{ post.updatedAt ? formatDate(post.updatedAt) : '-' }}</td>
+                <td>{{ post.isVisible ? '노출' : '비노출' }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="pagination">
+            <button :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">이전</button>
+
+            <button
+              v-for="page in visiblePages"
+              :key="page"
+              :class="{ active: currentPage === page }"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+
+            <button :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">다음</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+<script setup>
+import { ref, watch, onMounted, reactive, computed } from 'vue';
+import { format } from 'date-fns';
+import apiClient from '../api/axios.js';
+import { useAuthStore } from '../stores/auth.js';
+import { useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
+
+// 게시판 네임택 색상 동적 매핑
+const boardColorMap = {};
+const boardColors = [
+  'board-tag--coral',
+  'board-tag--mintgray',
+  'board-tag--gold',
+  'board-tag--salmon',
+  'board-tag--caramel',
+  'board-tag--violet',
+  'board-tag--blush',
+  'board-tag--honey',
+  'board-tag--avocado',
+  'board-tag--seafoam'
+];
+let boardColorIndex = 0;
+
+const getBoardColorClass = (boardName) => {
+  if (!boardColorMap[boardName]) {
+    const color = boardColors[boardColorIndex % boardColors.length];
+    boardColorMap[boardName] = color;
+    boardColorIndex++;
+  }
+  return boardColorMap[boardName];
+};
+
+const props = defineProps({
+  boardId: {
+    type: Number,
+    default: null
+  },
+  limit: {
+    type: Number,
+    default: 10
+  },
+  sort: {
+    type: String,
+    default: 'recent'
+  }
+});
+
+const authStore = useAuthStore();
+const router = useRouter();
+const searchCondition = reactive({
+  boardId: props.boardId,
+  isVisible: false,
+  postCategory: '',
+  searchKeyword: '',
+  searchType: null,
+  sort: props.sort,
+  offset: 0,
+  limit: props.limit
+})
+const boards = ref([]);
+const totalCount = ref(0);
+const posts = ref([]);
+// focusedPostId 받기
+const focusedId = ref(
+  route.query.focusedPostId ? Number(route.query.focusedPostId) : null
+);
+const fetchBoards = async () => {
+  try {
+    const response = await apiClient.get('/board/list', {
+      headers: { Authorization: `Bearer ${authStore.accessToken}` }
+    });
+    boards.value = response.data;
+  } catch (e) {
+    console.error('게시판 목록 불러오기 실패:', e);
+  }
+};
+
+const fetchPosts = async () => {
+  try {
+    const response = await apiClient.post('/post/list',
+      {
+        ...searchCondition,
+        isVisible: searchCondition.isVisible ? true : null
+      },
+      {
+        headers: { Authorization: `Bearer ${authStore.accessToken}` }
+      }
+    );
+    posts.value = response.data.posts.map(post => {
+      const board = boards.value.find(b => b.boardId === post.boardId);
+      return {
+        ...post,
+        boardName: board ? board.boardName : '알 수 없음'
+      };
+    });
+
+    totalCount.value = response.data.totalCount;
+  } catch (error) {
+    console.error('게시글 목록 조회 실패:', error);
+    posts.value = [];
+  }
+};
+
+const resetSearch = () => {
+  searchCondition.searchKeyword = '';
+  searchCondition.searchType = null;
+  searchCondition.isVisible = false;
+  searchCondition.offset = 0;
+  fetchPosts();
+};
+
+const goToPost = (post) => {
+  const board = boards.value.find(b => b.boardId === post.boardId);
+  router.push({
+    name: 'UpdatePost',
+    params: {
+      postId: post.postId,
+      boardId: post.boardId,
+    },
+    query: {
+      boardName: board ? board.boardName : null,
+    }
+  });
+};
+
+const formatDate = (date) => {
+  return format(new Date(date), 'yyyy-MM-dd HH:mm');
+};
+
+const currentPage = computed(() => Math.floor(searchCondition.offset / searchCondition.limit) + 1);
+const totalPages = computed(() => Math.ceil(totalCount.value / searchCondition.limit));
+
+const goToPage = (page) => {
+  if (page < 1 || page > totalPages.value) return;
+  searchCondition.offset = (page - 1) * searchCondition.limit;
+  fetchPosts();
+};
+
+const visiblePages = computed(() => {
+  const total = totalPages.value;
+  const current = currentPage.value;
+  const delta = 2;
+  const pages = [];
+
+  for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) {
+    pages.push(i);
+  }
+
+  return pages;
+});
+
+// 게시글 작성하기
+const goToWritePost = () => {
+  if (searchCondition?.boardId) {
+    const board = boards.value.find(b => b.boardId === searchCondition.boardId);
+    router.push({
+      name: 'WritePost',
+      params: { boardId: searchCondition.boardId },
+      query: { boardName: board ? board.boardName : null }
+    });
+  } else {
+    router.push({ name: 'WritePost' });
+  }
+};
+
+watch(() => props.boardId, (newBoardId) => {
+  searchCondition.boardId = newBoardId;
+}, { immediate: true });
+
+watch(() => searchCondition.boardId,
+  (newBoardId) => {
+    searchCondition.offset = 0;
+    fetchPosts();
+
+
+    if (newBoardId) {
+      router.replace({
+        name: 'PostManagement',
+        params: { boardId: newBoardId }
+      });
+    } else {
+      router.replace({
+        name: 'PostManagement'
+      });
+    }
+  },
+  { immediate: true }
+);
+
+onMounted(async () => {
+  await fetchBoards();
+  await fetchPosts();
+});
+
+</script>
+<style lang="scss" scoped>
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.page-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background-color: white;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.page-content {
+  flex: 1;
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.main-title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--seafoam-teal);
+  margin-top: 14px;
+  margin-bottom: 30px;
+}
+
+.filter-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  .filter-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    select,
+    input {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    select.instant-filter {
+      background-color: var(--melon-icecream);
+      border: 1px solid var(--avocado-frost);
+      font-weight: 500;
+      font-size: 13px;
+      padding-right: 24px;
+      background-image: url("data:image/svg+xml,%3Csvg fill='%23cbd690' height='18' viewBox='0 0 24 24' width='18' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+      background-size: 16px 16px;
+      appearance: none;
+    }
+
+    button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      background-color: var(--button-search-color);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    button.reset-button {
+      background-color: var(--sun-honey);
+      color: white;
+    }
+
+    button.reset-button:hover {
+      opacity: 0.9;
+    }
+
+    // Checkbox label and input styles
+    label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary-color);
+      cursor: pointer;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+  }
+
+  .search-group {
+    flex: 1;
+
+    select,
+    input {
+      background-color: var(--almond-cream);
+      border: 1px solid #d6cfc3;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 14px;
+    }
+
+    input {
+      flex: 1;
+      min-width: 200px;
+    }
+  }
+
+  .search-group select {
+    background-color: var(--almond-cream);
+    border: 1px solid #d6cfc3;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 14px;
+    padding-right: 24px;
+    background-image: url("data:image/svg+xml,%3Csvg fill='%23d6cfc3' height='18' viewBox='0 0 24 24' width='18' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-size: 16px 16px;
+    appearance: none;
+  }
+}
+
+.checkbox-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+}
+
+.checkbox-wrapper input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  accent-color: var(--primary-color) !important;
+  cursor: pointer !important;
+  border: 1px solid #ccc !important;
+  border-radius: 4px !important;
+  margin-right: 4px;
+  flex-shrink: 0;
+  min-width: auto;
+}
+
+.write-button {
+  display: flex;
+  justify-content: flex-end;
+
+  button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    background-color: var(--button-add-color);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
+}
+
+.post-list-content h3 {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--card-border-purple);
+  margin-bottom: 10px;
+}
+
+.post-list-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 10px;
+
+  th, td {
+    text-align: center;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  th {
+    background-color: var(--card-bg-mint);
+    color: #333;
+    font-weight: bold;
+  }
+
+  td {
+    background-color: white;
+    border-radius: 8px;
+    vertical-align: middle;
+    transition: background-color 0.2s ease;
+    &.title-cell {
+      font-size: 15px;
+      font-weight: 500;
+      color: #333;
+    }
+  }
+
+  tr {
+    cursor: pointer;
+  }
+
+  .category-tag {
+    display: inline-block;
+    background-color: var(--rose-dust);
+    color: black;
+    font-weight: 400;
+    border-radius: 14px;
+    padding: 2px 8px;
+    margin-right: 6px;
+    font-size: 14px;
+  }
+
+  tr.focused {
+    outline: 2px solid var(--highlight-border-yellow);
+    outline-offset: -2px;
+  }
+  
+}
+
+.post-list-content ul {
+  list-style: none;
+  padding: 0;
+}
+
+.board-tag {  
+  display: inline-block;
+  font-weight: 400;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 14px;
+}
+.board-tag--coral { background-color: var(--coral-red); color: white; }
+.board-tag--mintgray { background-color: var(--mint-gray); color: black; }
+.board-tag--gold { background-color: var(--golden-sand); color: black; }
+.board-tag--salmon { background-color: var(--salmon-sunset); color: black; }
+.board-tag--caramel { background-color: var(--soft-caramel); color: black; }
+
+.board-tag--violet { background-color: var(--violet-deep); color: white; }
+.board-tag--blush { background-color: var(--blush-pink); color: black; }
+.board-tag--honey { background-color: var(--sun-honey); color: black; }
+.board-tag--avocado { background-color: var(--avocado-frost); color: black; }
+.board-tag--seafoam { background-color: var(--seafoam-teal); color: white; }
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 10px;
+}
+
+.pagination button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  background-color: var(--avocado-frost);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+
+.pagination button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.pagination button.active {
+  background-color: var(--seafoam-teal);
+  color: black;
+  font-weight: bold;
+}
+
+</style>

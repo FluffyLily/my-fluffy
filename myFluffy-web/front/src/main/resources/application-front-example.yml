@@ -1,0 +1,44 @@
+spring:
+  config:
+    activate:
+      on-profile: front
+    import: application-core.yml
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/myfluffy
+    username: username
+    password: password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: your-google-client-id
+            client-secret: your-google-client-secret
+            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+            scope:
+              - profile
+              - email
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v2/userinfo
+            user-name-attribute: email
+
+security:
+  jwt:
+    secret-key: "your-secret-key"
+    access-token-expiration: 900000
+    refresh-token-expiration: 604800000
+
+app:
+  oauth:
+    redirect-uri: http://localhost:5174
+  is-local: true
+
+cors:
+  allowed:
+    origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5174}

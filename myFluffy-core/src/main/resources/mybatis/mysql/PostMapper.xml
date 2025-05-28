@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.renee328.mapper.PostMapper">
+    <resultMap id="postResultMap" type="com.renee328.dto.PostDto">
+        <id property="postId" column="POST_ID" />
+        <result property="boardId" column="BOARD_ID" />
+        <result property="boardCategoryId" column="BOARD_CATEGORY_ID" />
+        <result property="title" column="TITLE" />
+        <result property="content" column="CONTENT" />
+        <result property="isVisible" column="IS_VISIBLE" javaType="boolean" typeHandler="com.renee328.handler.BooleanToYNTypeHandler"/>
+        <result property="sortOrder" column="SORT_ORDER" />
+        <result property="viewCount" column="VIEW_COUNT" />
+        <result property="isPinned" column="IS_PINNED" javaType="boolean" typeHandler="com.renee328.handler.BooleanToYNTypeHandler"/>
+        <result property="authorId" column="AUTHOR_ID" />
+        <result property="postCategoryString" column="POST_CATEGORY" />
+        <result property="createdAt" column="CREATED_AT" />
+        <result property="createdBy" column="CREATED_BY" />
+        <result property="createdByName" column="CREATED_BY_NAME" />
+        <result property="updatedAt" column="UPDATED_AT" />
+        <result property="updatedBy" column="UPDATED_BY" />
+        <result property="updatedByName" column="UPDATED_BY_NAME" />
+    </resultMap>
+    <!-- 공통 검색 조건 -->
+    <sql id="commonSearchCondition">
+        <if test="boardId != null">
+            AND BOARD_ID = #{boardId}
+        </if>
+        <if test="searchKeyword != null and searchKeyword != '' and searchType != null">
+            <choose>
+                <when test="searchType.value == 'titleContent'">
+                    AND (TITLE LIKE CONCAT('%', #{searchKeyword}, '%')
+                    OR CONTENT LIKE CONCAT('%', #{searchKeyword}, '%'))
+                </when>
+                <when test="searchType.value == 'title'">
+                    AND TITLE LIKE CONCAT('%', #{searchKeyword}, '%')
+                </when>
+                <when test="searchType.value == 'content'">
+                    AND CONTENT LIKE CONCAT('%', #{searchKeyword}, '%')
+                </when>
+                <when test="searchType.value == 'authorName'">
+                    AND CREATED_BY_NAME LIKE CONCAT('%', #{searchKeyword}, '%')
+                </when>
+                <when test="searchType.value == 'postCategory' ">
+                    AND POST_CATEGORY LIKE CONCAT('%', #{searchKeyword}, '%')
+                </when>
+            </choose>
+        </if>
+    </sql>
+    <!-- 게시글 목록 조회(필터 - 게시판, 카테고리 / 검색 / 페이지) -->
+    <select id="getPostList" parameterType="com.renee328.dto.PostSearchCondition" resultMap="postResultMap">
+        SELECT
+        POST_ID, BOARD_ID, BOARD_CATEGORY_ID, TITLE, CONTENT, IS_VISIBLE, SORT_ORDER,
+        VIEW_COUNT, IS_PINNED, AUTHOR_ID, POST_CATEGORY, CREATED_AT, CREATED_BY,
+        CREATED_BY_NAME, UPDATED_AT, UPDATED_BY, UPDATED_BY_NAME
+        FROM posts
+        WHERE 1 = 1
+        <include refid="commonSearchCondition" />
+        <if test="isVisible != null">
+            AND IS_VISIBLE = 'Y'
+        </if>
+        <choose>
+            <when test="sort.value == 'old'">
+                ORDER BY CREATED_AT ASC
+            </when>
+            <otherwise>
+                ORDER BY CREATED_AT DESC
+            </otherwise>
+        </choose>
+        <if test="limit != null and offset != null">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 게시글 수 조회 -->
+    <select id="getPostCount" parameterType="com.renee328.dto.PostSearchCondition" resultType="int">
+        SELECT COUNT(*)
+        FROM posts
+        WHERE 1 = 1
+        <include refid="commonSearchCondition" />
+    </select>
+
+    <!-- 오늘 작성된 게시글 수 조회 -->
+    <select id="getTodayPostCount" resultType="int">
+        SELECT COUNT(*)
+        FROM posts
+        WHERE DATE(CREATED_AT) = CURDATE()
+    </select>
+
+    <!-- 최근 7일 간의 게시글 수 조회 -->
+    <select id="getPostCountLast7Days" resultType="map">
+        SELECT
+            DATE_FORMAT(CREATED_AT, '%Y-%m-%d') AS postDate,
+            COUNT(*) AS count
+        FROM posts
+        WHERE CREATED_AT >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        GROUP BY postDate
+        ORDER BY postDate ASC
+    </select>
+    
+    <!-- 게시글 작성하기 -->
+    <insert id="insertPost" parameterType="com.renee328.dto.PostDto" useGeneratedKeys="true" keyProperty="postId" keyColumn="POST_ID">
+        INSERT INTO posts (
+                           BOARD_ID,
+                           BOARD_CATEGORY_ID,
+                           TITLE,
+                           CONTENT,
+                           IS_VISIBLE,
+                           SORT_ORDER,
+                           IS_PINNED,
+                           AUTHOR_ID,
+                           POST_CATEGORY,
+                           CREATED_AT,
+                           CREATED_BY,
+                           CREATED_BY_NAME,
+                           UPDATED_AT,
+                           UPDATED_BY,
+                           UPDATED_BY_NAME
+                          )
+        VALUES (
+                #{boardId},
+                #{boardCategoryId},
+                #{title},
+                #{content},
+                #{isVisible, jdbcType=VARCHAR},
+                #{sortOrder},
+                #{isPinned, jdbcType=VARCHAR},
+                #{authorId},
+                #{postCategoryString},
+                NOW(),
+                #{createdBy},
+                #{createdByName},
+                NOW(),
+                #{updatedBy},
+                #{updatedByName}
+               )
+    </insert>
+    
+    <!-- 게시글 세부내용 조회 -->
+    <select id="getPostDetails" parameterType="java.lang.Long" resultMap="postResultMap">
+        SELECT
+            POST_ID, BOARD_ID, BOARD_CATEGORY_ID, TITLE, CONTENT, IS_VISIBLE, SORT_ORDER, VIEW_COUNT, IS_PINNED, POST_CATEGORY, CREATED_AT, CREATED_BY,
+            CREATED_BY_NAME, UPDATED_AT, UPDATED_BY, UPDATED_BY_NAME
+        FROM posts
+        WHERE POST_ID = #{postId}
+    </select>
+
+    <!-- 게시글 수정하기 -->
+    <update id="updatePost" parameterType="com.renee328.dto.PostDto">
+        UPDATE posts
+        SET TITLE = #{title}, CONTENT = #{content}, IS_VISIBLE = #{isVisible, jdbcType=VARCHAR}, SORT_ORDER = #{sortOrder},
+            IS_PINNED = #{isPinned, jdbcType=VARCHAR}, POST_CATEGORY = #{postCategoryString}, UPDATED_AT = NOW(), UPDATED_BY = #{updatedBy}, UPDATED_BY_NAME = #{updatedByName}
+        WHERE POST_ID = #{postId}
+    </update>
+
+    <!-- 게시글 삭제하기 -->
+    <delete id="deletePost" parameterType="java.lang.Long">
+        DELETE FROM posts WHERE POST_ID = #{postId}
+    </delete>
+
+    <!-- 게시글 삭제 로그 -->
+    <insert id="logPostDeletion" parameterType="map">
+        INSERT INTO admin_action_logs (ADMIN_ID, ACTION, TARGET, TIMESTAMP)
+        VALUES (#{deleterId}, '게시글 삭제', #{postTitle}, NOW())
+    </insert>
+</mapper>

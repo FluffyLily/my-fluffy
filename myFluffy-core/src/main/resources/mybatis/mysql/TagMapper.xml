@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.renee328.mapper.TagMapper">
+    <!-- tag 생성 -->
+    <insert id="insertTagIfNotExists" parameterType="String">
+        INSERT IGNORE INTO tags (TAG_NAME, CREATED_AT)
+        VALUES (#{tagName}, NOW())
+    </insert>
+
+    <select id="findAllTagNames" resultType="String">
+        SELECT TAG_NAME FROM tags
+    </select>
+
+    <select id="findTagIdByName" parameterType="String" resultType="int">
+        SELECT TAG_ID FROM tags WHERE TAG_NAME = #{tagName}
+    </select>
+
+</mapper>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.renee328.mapper.AuthMapper">
+
+    <resultMap id="adminResultMap" type="com.renee328.dto.AdminDto">
+        <id property="userId" column="USER_ID" />
+        <result property="roleId" column="ROLE_ID" />
+        <result property="createdAt" column="CREATED_AT" />
+        <result property="createdBy" column="CREATED_BY" />
+        <result property="updatedAt" column="UPDATED_AT" />
+        <result property="updatedBy" column="UPDATED_BY" />
+        <result property="isInitialized" column="IS_INITIALIZED" javaType="boolean" typeHandler="com.renee328.handler.BooleanToYNTypeHandler"/>
+        <result property="isActive" column="IS_ACTIVE" javaType="boolean" typeHandler="com.renee328.handler.BooleanToYNTypeHandler"/>
+        <result property="loginToken" column="LOGIN_TOKEN" />
+        <result property="loginPassword" column="LOGIN_PASSWORD" />
+        <result property="loginId" column="LOGIN_ID" />
+    </resultMap>
+
+    <select id="getByUsername" parameterType="String" resultMap="adminResultMap">
+        SELECT * FROM admin WHERE LOGIN_ID = #{loginId}
+    </select>
+
+    <update id="updateUserInitializationStatus" parameterType="map">
+        UPDATE admin
+        SET IS_INITIALIZED = #{isInitialized, jdbcType=VARCHAR}
+        WHERE USER_ID = #{userId}
+    </update>
+
+</mapper>

@@ -1,0 +1,57 @@
+:root {
+  /* 베이스 */
+  --color-bg: #f6f3ed;
+  --color-text: #1a1a1a;
+
+  /* 메인 테마 컬러 */
+  --lavender-gray: #a1a3b4;
+  --dusty-mauve: #b1a9b9;
+  --rosy-taupe: #bca3af;
+  --soft-blush: #d5b7b6;
+  --peach-cream: #e6d4cb;
+
+  /* 포인트 컬러 */
+  --plum-purple: #655a7c;
+  --rose-pink: #a97699;
+  --coral-blush: #d5978a;
+  --beige-mist: #dec4b6;
+  --misty-blue: #96b3b9;
+
+  /* 태그 스타일 */
+  --tag-bg-color: #fbeff2;
+  --tag-text-color: #a97699;
+
+  /* 그레이 계열 */
+  --gray-100: #f8f9fa;
+  --gray-200: #e9ecef;
+  --gray-400: #ced4da;
+  --gray-600: #868e96;
+  --gray-700: #5c636a;
+  --gray-800: #3a3a3a;
+  --gray-900: #212529;
+}
+
+/* Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Noto Serif KR', Georgia, serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.7;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--lavender-gray);
+  text-decoration: none;
+}
+
+ul, ol {
+  list-style: none;
+}

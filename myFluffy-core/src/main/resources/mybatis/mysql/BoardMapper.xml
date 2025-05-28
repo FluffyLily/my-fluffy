@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.renee328.mapper.BoardMapper">
+    <resultMap id="boardResultMap" type="com.renee328.dto.BoardDto">
+        <id property="boardId" column="BOARD_ID" />
+        <result property="boardName" column="BOARD_NAME" />
+        <result property="createdAt" column="CREATED_AT" />
+        <result property="createdBy" column="CREATED_BY" />
+        <result property="updatedAt" column="UPDATED_AT" />
+        <result property="updatedBy" column="UPDATED_BY" />
+    </resultMap>
+    <resultMap id="boardDetailResultMap" type="com.renee328.dto.BoardDto">
+        <id property="boardId" column="BOARD_ID"/>
+        <result property="boardName" column="BOARD_NAME"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="createdByLoginId" column="CREATED_BY_LOGIN_ID"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <result property="updatedByLoginId" column="UPDATED_BY_LOGIN_ID"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+    </resultMap>
+
+    <!-- 게시판 목록 조회 -->
+    <select id="getBoardList" resultMap="boardResultMap">
+        SELECT * FROM bbs ORDER BY BOARD_ID ASC;
+    </select>
+
+    <!-- 게시판 개수 조회 -->
+    <select id="getBoardCount" resultType="int">
+        SELECT COUNT(*)
+        FROM bbs;
+    </select>
+
+    <!-- 카테고리별 게시판 목록 조회 -->
+    <select id="getBbsListByCategoryId" parameterType="java.lang.Long" resultMap="boardResultMap">
+        SELECT
+            board.BOARD_ID,
+            board.BOARD_NAME
+        FROM bbs_category_mapping mapping
+        INNER JOIN bbs board ON mapping.BOARD_ID = board.BOARD_ID
+        WHERE
+            mapping.BOARD_CATEGORY_ID = #{boardCategoryId}
+        ORDER BY
+            board.BOARD_NAME;
+    </select>
+
+    <!-- 게시판 아이디 조회 -->
+    <select id="findBoardIdByName" resultType="java.lang.Long">
+        SELECT BOARD_ID FROM bbs WHERE BOARD_NAME = #{boardName}
+    </select>
+
+    <!-- 게시판 세부정보 조회 -->
+    <select id="getBoardDetails" parameterType="java.lang.Long" resultMap="boardDetailResultMap">
+        SELECT
+            board.BOARD_ID,
+            board.BOARD_NAME,
+            board.CREATED_BY,
+            admin1.LOGIN_ID AS CREATED_BY_LOGIN_ID,
+            board.CREATED_AT,
+            board.UPDATED_BY,
+            admin2.LOGIN_ID AS UPDATED_BY_LOGIN_ID,
+            board.UPDATED_AT
+        FROM bbs board
+            LEFT JOIN admin admin1 ON board.CREATED_BY = admin1.USER_ID
+            LEFT JOIN admin admin2 ON board.UPDATED_BY = admin2.USER_ID
+        WHERE board.board_id = #{boardId}
+    </select>
+
+    <!-- 게시판 추가 -->
+    <insert id="insertBoard" parameterType="com.renee328.dto.BoardDto" useGeneratedKeys="true" keyProperty="boardId" keyColumn="BOARD_ID">
+        INSERT INTO bbs
+        (
+            BOARD_NAME, CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
+        )
+        VALUES (
+                   #{boardName}, NOW(), #{createdBy}, NOW(), #{updatedBy}
+               )
+    </insert>
+
+    <!-- 게시판 수정 -->
+    <update id="updateBoard" parameterType="com.renee328.dto.BoardDto">
+        UPDATE bbs
+        SET BOARD_NAME = #{boardName}, UPDATED_AT = NOW(), UPDATED_BY = #{updatedBy}
+        WHERE BOARD_ID = #{boardId}
+    </update>
+
+    <!-- 게시판 삭제 -->
+    <delete id="deleteBoard" parameterType="java.lang.Long">
+        DELETE FROM bbs WHERE BOARD_ID = #{boardId}
+    </delete>
+
+    <!-- 게시판 삭제 로그 -->
+    <insert id="logBoardDeletion" parameterType="map">
+        INSERT INTO admin_action_logs (ADMIN_ID, ACTION, TARGET, TIMESTAMP)
+        VALUES (#{deleterId}, '게시판 삭제', #{boardName}, NOW())
+    </insert>
+</mapper>

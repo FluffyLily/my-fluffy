@@ -1,0 +1,46 @@
+spring:
+  config:
+    activate:
+      on-profile: admin
+    import: application-core.yml
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/myfluffy
+    username: username
+    password: password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 6000ms
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
+          max-wait: 5000ms
+  web:
+    resources:
+      static-locations:
+        - classpath:/static/
+        - file:/Users/myAccount/Desktop/myFluffy-uploads/
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+
+security:
+  jwt:
+    secret-key: "yourSecretKey"
+    access-token-expiration: 900000
+    refresh-token-expiration: 604800000
+
+cors:
+  allowed:
+    origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}

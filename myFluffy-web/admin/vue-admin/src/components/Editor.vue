@@ -1,0 +1,737 @@
+<template>
+  <div class="post-editor">
+    <!-- form-options 상단 -->
+    <div class="form-options">
+      <div class="form-row row-options">
+        <!-- 게시판 선택 -->
+        <div class="form-group">
+          <label>게시판 선택</label>
+          <select v-model="newPost.boardId" class="form-control">
+            <option :value="null">게시판을 선택하세요</option>
+            <option v-for="board in boards" :key="board.boardId" :value="board.boardId">
+              {{ board.boardName }}
+            </option>
+          </select>
+        </div>
+        <!-- 노출 여부 -->
+        <div class="form-group">
+          <label>게시글 노출 여부</label>
+          <div>
+            <label style="margin-right: 10px;">
+              <input
+                type="checkbox"
+                :checked="newPost.isVisible"
+                @change="newPost.isVisible = true"
+              />
+              <span class="checkbox-label">노출</span>
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                :checked="!newPost.isVisible"
+                @change="newPost.isVisible = false"
+              />
+              <span class="checkbox-label">비노출</span>
+            </label>
+          </div>
+        </div>
+        <!-- 상단 고정 여부 -->
+        <div class="form-group">
+          <label>상단 고정 여부</label>
+          <div>
+            <input type="checkbox" v-model="newPost.isPinned" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 게시글 제목 입력 -->
+    <div class="form-group">
+      <label for="post-title"></label>
+      <input
+        id="post-title"
+        type="text"
+        v-model="newPost.title"
+        placeholder="게시글 제목을 입력하세요"
+        class="form-control"
+      />
+    </div>
+
+    <!-- 게시글 내용 에디터 -->
+    <div class="form-group">
+      <label for="post-content"></label>
+      <ckeditor
+        v-if="editor"
+        id="post-content"
+        :editor="editor"
+        v-model="newPost.content"
+        :config="editorConfig"
+        @ready="onEditorReady"
+      />
+      <div id="word-count" class="word-count"></div>
+    </div>
+
+    <!-- form-options 하단 -->
+    <div class="form-options">
+      <div class="form-row">
+        <!-- 게시글 태그 -->
+        <div class="form-group">
+          <label>게시글 태그</label>
+          <input
+            type="text"
+            v-model="tagInput"
+            @compositionstart="handleCompositionStart"
+            @compositionend="handleCompositionEnd"
+            @keydown="handleKeyDown"
+            :disabled="isTagLimitReached"
+            :placeholder="isTagLimitReached ? '태그는 3개까지 입력 가능' : '태그 입력 후 Enter'"
+            class="form-control"
+          />
+          <!-- 태그 추천 기능 -->
+          <ul v-if="tagSuggestions.length" class="tag-suggestions">
+            <li v-for="tag in tagSuggestions" :key="tag" @click="selectTag(tag)">
+              #{{ tag }}
+            </li>
+          </ul>
+          <div class="selected-tags" v-if="newPost.postCategory.length">
+            <span class="tag" v-for="(tag, index) in newPost.postCategory" :key="tag">
+              #{{ tag }}
+              <span class="remove-tag" @click="removeTag(index)">x</span>
+            </span>
+          </div>
+        </div>
+        <!-- 정렬 순서 -->
+        <div class="form-group">
+          <label>정렬 순서</label>
+          <select v-model="newPost.sortOrder" class="form-control">
+            <option value="">정렬 순서</option>
+            <option value="1">1순위</option>
+            <option value="2">2순위</option>
+            <option value="3">3순위</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 이전/작성/수정/삭제 버튼 그룹 -->
+    <div class="d-flex justify-content-center gap-2 mt-3">
+      <button @click="goToPostList" class="btn btn-warning">
+        이전으로
+      </button>
+      <button @click="writePost" :disabled="!canSubmit" class="btn btn-primary">
+        {{ props.postId ? '수정하기' : '작성하기' }}
+      </button>
+      <button v-if="canDeletePost" @click="confirmDeletePost(newPost.postId, newPost.title)" class="btn btn-danger">
+        삭제하기
+      </button>
+    </div>
+  </div>
+
+    <!-- 게시글 삭제 모달 -->
+    <div v-if="showDeletePostModal" class="modal fade show d-flex justify-content-center align-items-center" style="display: block;" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">게시글 삭제</h5>
+          <button type="button" class="btn-close" @click="closeDeleteModal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label d-block">관리자 비밀번호 확인</label>
+            <input type="password" v-model="deletePassword" class="form-control mb-2" />
+            <div v-if="deleteError" class="text-danger mb-3">{{ deleteError }}</div>
+          </div>
+          <div class="text-danger mb-3">
+            <small>⚠️ 이 작업은 되돌릴 수 없습니다.</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-danger" @click="deletePost">삭제</button>
+          <button class="btn btn-secondary" @click="closeDeleteModal">닫기</button>
+        </div>
+      </div>
+    </div>
+    </div>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted, computed, watch } from 'vue'
+import Fuse from 'fuse.js';
+import apiClient from '../api/axios.js';
+import { useAuthStore } from '../stores/auth.js';
+import { useRouter } from 'vue-router';
+import { hasAnyRole } from '../util/roleUtils.js';
+
+const authStore = useAuthStore();
+const router = useRouter();
+const props = defineProps({
+  boardId: {
+    type: [Number, String],
+    default: null
+  },
+  boardName: {
+    type: String,
+    default: null
+  },
+  postId: {
+    type: [Number, String],
+    default: null
+  }
+})
+
+// 게시판 목록과 관련 데이터들
+const boards = ref([])
+const newPost = reactive({
+  boardId: props.boardId,
+  boardCategoryId: null,
+  title: '',
+  content: '',
+  sortOrder: null,
+  isVisible: true,
+  isPinned: false,
+  authorId: authStore.userId,
+  images: [],
+  postCategory: [],
+  postCategoryString: '',
+  createdAt: new Date().toISOString(),
+  createdBy: authStore.userId,
+  createdByName: authStore.loginId,
+  updatedAt: new Date().toISOString(),
+  updatedBy: authStore.userId,
+  updatedByName: authStore.loginId
+})
+
+// ckeditor
+const editor = ref(null)
+const editorConfig = reactive({
+  toolbar: {
+    shouldNotGroupWhenFull: true,
+    items: [
+      'heading',
+      '|',
+      'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript',
+      'fontColor', 'fontBackgroundColor', 'highlight',
+      '|',
+      'alignment',
+      'link',
+      'bulletedList', 'numberedList', 'outdent', 'indent',
+      '|',
+      'imageUpload', 'insertTable', 'blockQuote', 'codeBlock',
+      '|',
+      'mediaEmbed', 'specialCharacters', 'horizontalLine',
+      '|',
+      'undo', 'redo',
+      'findAndReplace',
+      'tableProperties', 'tableCellProperties'
+    ]
+  },
+  image: {
+    toolbar: [
+      'imageStyle:full', 'imageStyle:side',
+      '|',
+      'imageTextAlternative'
+    ],
+    resizeUnit: '%',
+    styles: ['full', 'side']
+  },
+  simpleUpload: {
+    uploadUrl: '/api/post/upload-image',
+    headers: {
+      'Authorization': `Bearer ${authStore.accessToken}`,  // 인증 헤더
+    }
+  },
+  table: {
+    contentToolbar: [
+      'tableColumn',
+      'tableRow',
+      'mergeTableCells'
+    ]
+  },
+  horizontalLine: {},
+  wordCount: {
+    container: '#word-count'
+  },
+  language: 'ko',
+  licenseKey: 'GPL'
+})
+
+// 에디터 내 이미지 URL 추출하기
+const extractImageUrls = (htmlContent) => {
+  const urls = [];
+  const imgTagRegex = /<img[^>]+src="([^">]+)"/g;
+  let match;
+  while ((match = imgTagRegex.exec(htmlContent)) !== null) {
+    urls.push(match[1]);
+  }
+  return urls;
+};
+
+// 태그 관련 데이터
+const allTags = ref([]);
+const tagSuggestions = ref([]);
+const tagInput = ref('');
+
+watch(tagInput, (val) => {
+  const keyword = val.replace('#', '').toLowerCase();
+  tagSuggestions.value = fuse.value.search(keyword).map(result => result.item);
+});
+
+const isComposing = ref(false);
+
+const handleCompositionStart = () => { isComposing.value = true; };
+const handleCompositionEnd = () => { isComposing.value = false; };
+
+const handleKeyDown = (event) => {
+  if (event.key === 'Enter' && !isComposing.value) {
+    addTag();
+    event.preventDefault();
+  }
+};
+
+// fuse 설정
+const fuse = computed(() => new Fuse(allTags.value, {
+  includeScore: true, // 결과에 유사도 점수를 포함
+  threshold: 0.4, // 0~1 사이: 얼마나 다른 것도 허용할지 - 수치가 낮을 수록 엄격함.
+}));
+
+const isTagLimitReached = computed(() => newPost.postCategory.length >= 3);
+
+// 태그 추천 + 자동 완성 
+const selectTag = (tag) => {
+  if (!newPost.postCategory.includes(tag)) {
+    newPost.postCategory.push(tag);
+  }
+  tagInput.value = '';
+  tagSuggestions.value = [];
+};
+// 단어 입력 후 # 태그 자동 입력
+const addTag = () => {
+  if (newPost.postCategory.length >= 3) return; // 최대 3개 제한
+  const value = tagInput.value.trim().replace(/^#/, '');
+  if (value && !newPost.postCategory.includes(value)) {
+    newPost.postCategory.push(value);
+  }
+  tagInput.value = '';
+  tagSuggestions.value = [];
+};
+
+const removeTag = (index) => {
+  newPost.postCategory.splice(index, 1);
+};
+
+const fetchTags = async () => {
+  try {
+    const response = await apiClient.get('/post/tags', {
+      headers: { Authorization: `Bearer ${authStore.accessToken}` }
+    });
+    allTags.value = response.data;
+  } catch (e) {
+    console.error('태그 불러오기 실패:', e);
+  }
+};
+
+const onEditorReady = (editorInstance) => {
+  const wordCountPlugin = editorInstance.plugins.get('WordCount');
+  
+  if (wordCountPlugin) {
+    wordCountPlugin.on('update', (event, stats) => {
+      const container = document.querySelector('#word-count');
+      if (container) {
+        container.textContent = `글자 수: ${stats.characters}`;
+      }
+    });
+  }
+};
+
+// 게시판 목록 가져오기
+const fetchBoards = async () => {
+  try {
+    const response = await apiClient.get('/board/list', {
+      headers: { Authorization: `Bearer ${authStore.accessToken}` }
+    });
+    boards.value = response.data;
+  } catch (e) {
+    console.error('게시판 목록 불러오기 실패:', e);
+  }
+};
+
+// 게시글 세부내용 조회
+const fetchPost = async () => {
+  if (!props.postId) return;
+
+  try {
+    const response = await apiClient.get(`/post/detail/${props.postId}`, {
+      headers: { Authorization: `Bearer ${authStore.accessToken}`}
+    });
+    Object.assign(newPost, response.data);
+
+    if (!newPost.postCategory && newPost.postCategoryString) {
+      newPost.postCategory = newPost.postCategoryString
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+    } else if (!newPost.postCategory) {
+      newPost.postCategory = [];
+    }
+  } catch (error) {
+    console.error('게시글 세부내용 조회 실패: ', error);
+  }
+}
+
+// 보던 게시글 목록으로 돌아가기
+const goToPostList = () => {
+  router.back();
+};
+
+// 게시글 작성하기
+const writePost = async () => {
+  if (!canSubmit.value) return;
+
+  const board = boards.value.find(b => b.boardId === newPost.boardId);
+  newPost.boardCategoryId = board ? board.boardCategoryId : null;
+  newPost.images = extractImageUrls(newPost.content).map(url => ({ imageUrl: url }));
+
+  if (props.postId) {
+    if (!confirm("게시글을 수정하시겠습니까?")) return;
+    try {
+      const response = await apiClient.put(`/post/update/${props.postId}`, newPost, {
+        headers: { Authorization: `Bearer ${authStore.accessToken}` }
+      });
+      console.log('게시글 수정 성공: ', response.data);
+      router.push({ name: 'PostManagement' });
+    } catch (error) {
+      console.error('게시글 수정 실패: ', error);
+    }
+  } else {
+    if (!confirm("새로운 게시글을 작성하시겠습니까?")) return;
+    try {
+      const response = await apiClient.post('/post/write', newPost, {
+        headers: { Authorization: `Bearer ${authStore.accessToken}` }
+      });
+      console.log('게시글 작성 성공: ', response.data);
+      router.push({ name: 'PostManagement' });
+    } catch (error) {
+      console.error('게시글 작성 실패: ', error);
+    }
+  }
+}
+
+const selectedPostId = ref(null);
+const selectedPostTitle = ref('');
+
+const canSubmit = computed(() => {
+  return newPost.boardId && newPost.title.trim() !== '' && newPost.content.trim() !== '';
+});
+
+// 현재 관리자의 게시글 삭제 권한 확인 (수정 모드일 때만 노출)
+const canDeletePost = computed(() =>
+  props.postId && (
+    hasAnyRole(authStore.roleId, ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN']) ||
+    authStore.userId === newPost.createdBy
+  )
+);
+
+const deletePassword = ref('');
+const deleteError = ref('');
+const showDeletePostModal = ref(false);
+
+// 관리자 삭제 모달 비밀번호 에러 메시지 초기화
+watch(showDeletePostModal, (newVal) => {
+  if (!newVal) {
+      deleteError.value = '';
+  }
+});
+
+// 사용자가 비밀번호 입력을 다시 시작하면 에러 메시지 제거
+watch(deletePassword, () => {
+    deleteError.value = '';
+});
+
+const confirmDeletePost = (postId, postTitle) => {
+  selectedPostId.value = postId;
+  selectedPostTitle.value = postTitle;
+  showDeletePostModal.value = true;
+}
+
+const closeDeleteModal = () => {
+  showDeletePostModal.value = false;
+  deletePassword.value = '';
+};
+
+// 게시글 삭제하기
+const deletePost = async () => {
+  if (!deletePassword.value.trim()) {
+    deleteError.value = '관리자 비밀번호를 입력하세요.';
+    return;
+  }
+  try {
+    const response = await apiClient.post('/admin/verify-password', {
+    username: authStore.loginId, 
+    password: deletePassword.value 
+    }, {
+    headers: { Authorization: `Bearer ${authStore.accessToken}` } 
+    });
+    if (response.data.success) {
+      console.log("게시글 삭제 [postTitle]: ", selectedPostTitle);
+
+        await apiClient.delete(`/post/delete/${selectedPostId.value}`, {
+            headers: { Authorization: `Bearer ${authStore.accessToken}` },
+            params: { 
+            deleterId: authStore.loginId,
+            postTitle: selectedPostTitle.value
+            }
+        });
+        showDeletePostModal.value = false;
+        deletePassword.value = '';
+        router.push({ name: 'PostManagement' });
+    } else {
+        deleteError.value = '비밀번호가 일치하지 않습니다.';
+    }
+  } catch (error) {
+    console.error('게시글을 삭제하지 못함: ', error);
+    deleteError.value = '게시글 삭제 중 문제가 발생했습니다. 다시 시도해 주세요.';
+  }
+
+}
+
+onMounted(() => {
+  editor.value = window.ClassicEditor
+  fetchBoards().then(() => {
+    if (props.postId) {
+      fetchPost();
+    }
+  });
+  fetchTags();
+})
+
+</script>
+
+<style scoped lang="scss">
+.post-editor {
+  max-width: 800px;
+  margin: 20px auto;
+  background-color: var(--background-color);
+  padding: 2rem;
+  border: 3px solid var(--card-border-pink);
+  border-radius: 15px;
+  box-shadow: 0px 8px 15px var(--shadow-color);
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+.row-options {
+margin-bottom: 0.25rem;
+}
+
+.form-group {
+  margin-bottom: 0.5rem;
+  position: relative;
+}
+
+.form-row + .form-group {
+  margin-top: 0rem;
+}
+
+label {
+  font-weight: 500;
+  color: var(--secondary-color);
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1.5px solid var(--selected-color);
+  border-radius: 8px;
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: var(--primary-color);
+  background-color: #fff;
+  outline: none;
+}
+
+select.form-control {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='10'%20height='5'%20viewBox='0%200%2010%205'%3E%3Cpath%20fill='%23666'%20d='M0%200l5%205%205-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.65rem auto;
+  cursor: pointer;
+}
+
+.form-row .form-control {
+  padding: 0.3rem;
+  font-size: 0.85rem;
+}
+
+// 버튼 공통 스타일
+.btn {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  color: #fff;
+}
+
+.btn-primary {
+  background-color: var(--button-add-color);
+}
+.btn-primary:hover {
+  background-color: var(--button-hover-add);
+}
+
+.btn-danger {
+  background-color: var(--button-danger-color);
+}
+.btn-danger:hover {
+  background-color: var(--button-hover-danger);
+}
+
+.btn-warning {
+  background-color: var(--button-warning-color);
+}
+.btn-warning:hover {
+  background-color: var(--button-hover-warning);
+}
+
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-options {
+  border: 2px solid var(--card-border-mint);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: var(--card-bg-mint);
+}
+
+.checkbox-label {
+  color: #333;
+  font-weight: normal;
+  margin-left: 6px;
+}
+.word-count {
+  color: var(--secondary-color);
+}
+
+.tag-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  z-index: 10;
+  list-style: none;
+  margin-top: 0.2rem;
+  padding: 0.5rem;
+  border: 1px solid var(--selected-color);
+  background-color: white;
+  border-radius: 5px;
+  max-height: 150px;
+  overflow-y: auto;
+
+  li {
+    padding: 0.15rem 0.5rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  li:hover {
+    display: inline-block;
+    background-color: var(--selected-color);
+    color: white;
+    border-radius: 3px;
+  }
+}
+
+.selected-tags {
+  margin-top: 0.3rem;
+  .tag {
+    display: inline-block;
+    margin-right: 6px;
+    background-color: var(--selected-color);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    .remove-tag {
+      margin-left: 3px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.90rem;
+    }
+  }
+}
+
+.modal-footer {
+  display: flex;
+}
+
+.modal-footer .btn-primary {
+  background-color: var(--button-add-color);
+  border-color: var(--button-add-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.modal-footer .btn-primary:hover {
+  background-color: var(--button-hover-add);
+  border-color: var(--button-hover-add);
+}
+
+.modal-footer .btn-secondary {
+  background-color: var(--button-close-color);
+  border-color: var(--button-close-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.modal-footer .btn-secondary:hover {
+  background-color: var(--button-hover-close);
+  border-color: var(--button-hover-close);
+}
+</style>
+
+<style lang="scss">
+
+.ck-editor__editable_inline {
+  min-height: 300px;
+  background-color: #fff;
+  padding: 0.8em;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* 툴바 및 아이콘 색상 보정 */
+.ck-toolbar,
+.ck-toolbar .ck-button__label,
+.ck-toolbar .ck-dropdown__button .ck-button__label {
+  color: black !important;
+}
+
+.ck-toolbar .ck-icon {
+  fill: black !important;
+}
+</style>
