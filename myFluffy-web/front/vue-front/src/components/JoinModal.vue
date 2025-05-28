@@ -24,9 +24,9 @@
 function loginWithGoogle() {
     window.location.href = 'http://localhost:8082/oauth2/authorization/google'
 }
-function loginWithKakao() {
-    window.location.href = 'http://localhost:8082/oauth2/authorization/kakao'
-}
+// function loginWithKakao() {
+//     window.location.href = 'http://localhost:8082/oauth2/authorization/kakao'
+// }
 </script>
 
 <style scoped lang="scss">

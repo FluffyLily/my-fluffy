@@ -11,7 +11,6 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     setAccessToken(accessToken) {
       this.accessToken = accessToken
-      // accessToken은 쿠키에 저장되므로 localStorage 저장하지 않음
     },
     clearAccessToken() {
       this.accessToken = null

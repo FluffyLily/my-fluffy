@@ -46,6 +46,9 @@ build/
 vue-admin/node_modules/
 vue-admin/dist/
 
+# ckeditor5 커스텀 노드 모듈 무시
+src/main/resources/static/ckeditor5-custom/node_modules/
+
 ### Spring static build copy
 src/main/resources/static/assets/
 

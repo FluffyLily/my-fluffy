@@ -1,7 +1,7 @@
 # 🐾 My Fluffy (마이 플러피)
 
 `My Fluffy`는 반려생활 커뮤니티 기반의 블로그형 웹사이트입니다.  
-관리자 시스템과 사용자 프론트가 분리되어 있으며, Spring Boot와 Vue 3 기반으로 구성되어 있습니다.
+관리자 시스템 모듈과 사용자 프론트 모듈이 분리되어 있으며, Spring Boot와 Vue 3 기반으로 구성되어 있습니다.
 
 ---
 
@@ -12,10 +12,10 @@ myFluffy/
   ├── myFluffy-core/         # 공통 비즈니스 로직 및 설정 (Spring Boot)
   ├── myFluffy-web/          # 웹 모듈 (관리자/사용자 백엔드 및 프론트)
   │   ├── admin/             # 관리자 시스템 (Spring Boot + Vue 3)
-  │   │   ├── src/main/      # 관리자 백엔드 (Spring Boot)
+  │   │   ├── src/           # 관리자 백엔드 (Spring Boot)
   │   │   └── vue-admin/     # 관리자 프론트엔드 (Vue 3 + Vite)
   │   ├── front/             # 사용자 화면 (Spring Boot + Vue 3)
-  │   │   ├── src/main/      # 사용자 백엔드 (Spring Boot)
+  │   │   ├── src/           # 사용자 백엔드 (Spring Boot)
   │   └── └── vue-front/     # 사용자 프론트엔드 (Vue 3 + Vite)
   ├── pom.xml                # 최상위 Maven 설정
   └── README.md              # 현재 문서
@@ -53,7 +53,7 @@ myFluffy/
 ## 🔒 주의 사항
 
 - `application-*.yml` 설정 파일은 Git에 포함되지 않습니다.  
-  각 모듈 내의 `application-*-example.yml`을 복사해서 실제 설정 파일로 사용하세요.
+  각 모듈 내의 `application-*-example.yml`을 복사해서 실제 세부 설정을 수정해서 사용하세요.
 
 - `.gitignore`에 따라 다음은 버전 관리에서 제외됩니다:
   - 빌드 산출물: `target/`, `build/`
@@ -65,6 +65,6 @@ myFluffy/
 
 ## 📌 TODO
 
-- [✔] 사용자 프론트(front) 개발 시작
-- [✔] OAuth 로그인 연동 (Google)
+- [ ] 사용자 프론트(front) 개발 시작
+- [ ] OAuth 로그인 연동 (Google, Kakao)
 - [ ] 관리자 시스템 회원 관리 기능 확장 및 고도화

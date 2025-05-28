@@ -9,12 +9,11 @@ const apiClient = axios.create({
     },
 })
 
-// 요청 인터셉터: accessToken 체크만, Authorization 헤더 설정 제거
+// 요청 인터셉터: accessToken 체크
 apiClient.interceptors.request.use(
     (config) => {
         try {
             const authStore = useAuthStore()
-            // accessToken 존재 여부만 체크, 아무 동작도 하지 않음
             if (!authStore.accessToken) {
                 // do nothing
             }
@@ -26,7 +25,7 @@ apiClient.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// 응답 인터셉터: 토큰 갱신 로직 제거, 실패 시 그대로 reject
+// 응답 인터셉터: 토큰 갱신 로직 제거
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
