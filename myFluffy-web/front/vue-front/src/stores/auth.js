@@ -13,17 +13,30 @@ export const useAuthStore = defineStore('auth', {
       this.accessToken = accessToken
     },
     clearAccessToken() {
-      this.accessToken = null
+      this.accessToken = null;
     },
     setUserInfo({ userId, loginId, userName, userType }) {
       this.userId = userId
       this.loginId = loginId
       this.userName = userName
       this.userType = userType
+      
       localStorage.setItem('userId', userId)
       localStorage.setItem('loginId', loginId)
       localStorage.setItem('userName', userName)
       localStorage.setItem('userType', userType)
+    },
+    clearUserInfo() {
+      this.accessToken = null;
+      this.userId = null;
+      this.userName = null;
+      this.loginId = null;
+      this.userType = null;
+
+      localStorage.removeItem('userId');
+      localStorage.removeItem('loginId');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userType');
     },
   },
 })

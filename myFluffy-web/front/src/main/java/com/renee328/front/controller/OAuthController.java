@@ -1,15 +1,17 @@
 package com.renee328.front.controller;
 
 import com.renee328.util.JwtManager;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.Cookie;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,7 +23,7 @@ import static com.renee328.front.util.Constants.OAUTH_API_URL;
 
 @RestController
 @RequestMapping(OAUTH_API_URL)
-public class OAuthLoginController {
+public class OAuthController {
 
     private final JwtManager jwtManager;
     private final String redirectUri;
@@ -29,8 +31,8 @@ public class OAuthLoginController {
     @Value("${app.is-local}")
     private boolean isLocal;
 
-    public OAuthLoginController(JwtManager jwtManager,
-                                @Value("${app.oauth.redirect-uri}") String redirectUri) {
+    public OAuthController(JwtManager jwtManager,
+                           @Value("${app.oauth.redirect-uri}") String redirectUri) {
         this.jwtManager = jwtManager;
         this.redirectUri = redirectUri;
     }
@@ -65,7 +67,7 @@ public class OAuthLoginController {
                 <script>
                   setTimeout(function () {
                     window.location.href = '%s/oauth-redirect';
-                  }, 200);
+                  }, 500);
                 </script>
               </body>
             </html>
@@ -74,6 +76,7 @@ public class OAuthLoginController {
         response.setContentType("text/html");
         response.setCharacterEncoding("UTF-8");
         response.getWriter().write(html);
+        response.getWriter().flush();
     }
 
     @GetMapping("/me")
@@ -92,10 +95,30 @@ public class OAuthLoginController {
             result.put("userName", oAuth2User.getAttribute("name"));
         } else {
             result.put("loginId", authentication.getPrincipal());
-            result.put("userName", "사용자"); // fallback
+            result.put("userName", "사용자");
         }
 
         result.put("userType", "USER");
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletResponse response, HttpServletRequest request) {
+        request.getSession().invalidate();
+
+        // SecurityContext 초기화
+        SecurityContextHolder.clearContext();
+
+        // accessToken 쿠키 제거
+        ResponseCookie deleteCookie = ResponseCookie.from("accessToken", "")
+                .httpOnly(true)
+                .secure(!isLocal) // 프로덕션 환경이면 true
+                .path("/")
+                .maxAge(0)
+                .sameSite(isLocal ? "Lax" : "None")
+                .build();
+
+        response.setHeader("Set-Cookie", deleteCookie.toString());
+        return ResponseEntity.ok().build();
     }
 }

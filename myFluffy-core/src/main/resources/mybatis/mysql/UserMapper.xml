@@ -1,9 +1,83 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.renee328.mapper.UserMapper">
-    <!-- 이메일로 사용자 조회 -->
+
+    <resultMap id="userResultMap" type="com.renee328.dto.UserDto">
+        <id property="userId" column="USER_ID" />
+        <result property="userName" column="USER_NAME" />
+        <result property="loginId" column="LOGIN_ID" />
+        <result property="loginPassword" column="LOGIN_PASSWORD" />
+        <result property="email" column="EMAIL" />
+        <result property="phoneNumber" column="PHONE_NUMBER" />
+        <result property="lastPasswordChangeAt" column="LAST_PASSWORD_CHANGE_AT" />
+        <result property="passwordErrorCount" column="PASSWORD_ERROR_COUNT" />
+        <result property="loginCount" column="LOGIN_COUNT" />
+        <result property="lastLoginAt" column="LAST_LOGIN_AT" />
+        <result property="userTypeCode" column="USER_TYPE_CODE" />
+        <result property="createdAt" column="CREATED_AT" />
+        <result property="createdBy" column="CREATED_BY" />
+        <result property="updatedAt" column="UPDATED_AT" />
+        <result property="updatedBy" column="UPDATED_BY" />
+        <result property="deviceId" column="DEVICE_ID" />
+        <result property="uuid" column="UUID" />
+    </resultMap>
+
+    <!-- 공통 검색 조건 -->
+    <sql id="commonSearchCondition">
+        <if test="userTypeCode != null">
+            AND USER_TYPE_CODE = #{userTypeCode}
+        </if>
+        <if test="searchKeyword != null and searchKeyword != '' and searchType != null">
+            <choose>
+                <when test="searchType.value == 'userName'">
+                    AND USER_NAME LIKE CONCAT('%', #{searchKeyword}, '%')
+                </when>
+                <when test="searchType.value == 'loginId'">
+                    AND LOGIN_ID LIKE CONCAT('%', #{searchKeyword}, '%')
+                </when>
+                <when test="searchType.value == 'email'">
+                    AND EMAIL LIKE CONCAT('%', #{searchKeyword}, '%')
+                </when>
+            </choose>
+        </if>
+    </sql>
+
+    <!-- 회원 등록 -->
+    <insert id="insertUser" parameterType="com.renee328.dto.UserDto" useGeneratedKeys="true" keyProperty="userId">
+        INSERT INTO users (
+            USER_NAME,
+            LOGIN_ID,
+            LOGIN_PASSWORD,
+            EMAIL,
+            PHONE_NUMBER,
+            USER_TYPE_CODE,
+            LOGIN_COUNT,
+            LAST_LOGIN_AT,
+            CREATED_AT,
+            CREATED_BY,
+            UPDATED_AT,
+            UPDATED_BY,
+            DEVICE_ID,
+            UUID
+        ) VALUES (
+                     #{userName},
+                     #{loginId},
+                     #{loginPassword},
+                     #{email},
+                     #{phoneNumber},
+                     #{userTypeCode},
+                     #{loginCount},
+                     NOW(),
+                     NOW(),
+                     #{createdBy},
+                     NOW(),
+                     #{updatedBy},
+                     #{deviceId},
+                     #{uuid}
+                 )
+    </insert>
+
+    <!-- 이메일로 회원 조회 -->
     <select id="findByEmail" parameterType="string" resultType="com.renee328.dto.UserDto">
         SELECT
             USER_ID,
@@ -23,39 +97,56 @@
             UPDATED_BY,
             DEVICE_ID,
             UUID
-        FROM user
+        FROM users
         WHERE EMAIL = #{email}
         LIMIT 1
     </select>
 
-    <!-- 사용자 등록 -->
-    <insert id="insertUser" parameterType="com.renee328.dto.UserDto" useGeneratedKeys="true" keyProperty="userId">
-        INSERT INTO user (
-            USER_NAME,
-            LOGIN_ID,
-            LOGIN_PASSWORD,
-            EMAIL,
-            PHONE_NUMBER,
-            USER_TYPE_CODE,
-            CREATED_AT,
-            CREATED_BY,
-            UPDATED_AT,
-            UPDATED_BY,
-            DEVICE_ID,
-            UUID
-        ) VALUES (
-                     #{userName},
-                     #{loginId},
-                     #{loginPassword},
-                     #{email},
-                     #{phoneNumber},
-                     #{userTypeCode},
-                     NOW(),
-                     #{createdBy},
-                     NOW(),
-                     #{updatedBy},
-                     #{deviceId},
-                     #{uuid}
-                 )
-    </insert>
+    <!-- 회원 목록 조회 -->
+    <select id="getUserList" parameterType="com.renee328.dto.UserSearchCondition" resultMap="userResultMap">
+        SELECT
+            USER_ID, USER_NAME, LOGIN_ID,
+            EMAIL, PASSWORD_ERROR_COUNT, LOGIN_COUNT,
+            USER_TYPE_CODE, CREATED_AT, LAST_LOGIN_AT
+        FROM users
+        WHERE 1 = 1
+        <include refid="commonSearchCondition" />
+        <choose>
+            <when test="sort.value == 'old'">
+                ORDER BY CREATED_AT ASC
+            </when>
+            <otherwise>
+                ORDER BY CREATED_AT DESC
+            </otherwise>
+        </choose>
+        <if test="limit != null and offset != null">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 회원 수 조회 -->
+    <select id="getUserCount" parameterType="com.renee328.dto.UserSearchCondition" resultType="int">
+        SELECT COUNT(*)
+        FROM users
+        WHERE 1 = 1
+        <include refid="commonSearchCondition" />
+    </select>
+
+    <!-- 최근 7일 간의 새로운 회원 수 조회 -->
+    <select id="getUserCountWeekly" resultType="int">
+        SELECT COUNT(*)
+        FROM users
+        WHERE CREATED_AT >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+    </select>
+
+    <!-- 사용자 로그인 카운트, 시간 갱신 -->
+    <update id="updateUserLoginInfo" parameterType="com.renee328.dto.UserDto">
+        UPDATE users
+        SET
+            LOGIN_COUNT = #{loginCount},
+            LAST_LOGIN_AT = NOW(),
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{updatedBy}
+        WHERE USER_ID = #{userId}
+    </update>
 </mapper>

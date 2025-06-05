@@ -12,8 +12,8 @@ import java.util.UUID;
 @Service
 public class FileServiceImpl implements FileService {
 
-    private static final String BASE_DIR = "/Users/inhye/Desktop/myFluffy-uploads";  // 실제 서버 디렉토리 경로
-    private static final String BASE_URL = "/uploads/images";  // 클라이언트가 접근할 때 사용하는 경로
+    private static final String BASE_DIR = "/Users/inhye/Desktop/myFluffy-uploads";
+    private static final String BASE_URL = "/uploads/images";
 
     @Override
     public String saveImage(MultipartFile file) {

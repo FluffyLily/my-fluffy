@@ -13,6 +13,7 @@ public class UserDto {
     private LocalDateTime lastPasswordChangeAt; // 최종_비밀번호_변경_일시
     private Integer passwordErrorCount;         // 비밀번호_입력오류_수
     private Integer loginCount;                 // 로그인_횟수
+    private LocalDateTime lastLoginAt;          // 최종_로그인_일시
     private String userTypeCode;                // 사용자_구분_코드
     private LocalDateTime createdAt;            // 등록_일시
     private Long createdBy;                     // 등록자_순번
@@ -91,6 +92,14 @@ public class UserDto {
 
     public void setLoginCount(Integer loginCount) {
         this.loginCount = loginCount;
+    }
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
     }
 
     public String getUserTypeCode() {

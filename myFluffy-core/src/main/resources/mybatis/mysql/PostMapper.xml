@@ -46,6 +46,7 @@
             </choose>
         </if>
     </sql>
+
     <!-- 게시글 목록 조회(필터 - 게시판, 카테고리 / 검색 / 페이지) -->
     <select id="getPostList" parameterType="com.renee328.dto.PostSearchCondition" resultMap="postResultMap">
         SELECT

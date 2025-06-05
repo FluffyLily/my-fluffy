@@ -47,7 +47,7 @@ public class AuthServiceImpl implements AuthService {
             // 2. Spring Security의 `isEnabled()`가 false인 경우 직접 403 응답 반환
             if (!userDetails.isEnabled()) {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "계정이 비활성화되었습니다.");
-                return null;  // 토큰을 반환하지 않도록 null 반환
+                return null;
             }
 
             // 3. 비밀번호 검증 (BCryptPasswordEncoder 암호화 알고리즘)

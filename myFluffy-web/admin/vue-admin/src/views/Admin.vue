@@ -557,7 +557,7 @@ onMounted(fetchAdmins);
   button {
     padding: 4px 12px;
     font-size: 0.875rem;
-    border-radius: 4px;
+    border-radius: 6px;
     height: 36px;
     font-weight: bold;
     display: flex;
@@ -638,11 +638,11 @@ onMounted(fetchAdmins);
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 5px;
   button {
     padding: 4px 12px;
     font-size: 0.875rem;
-    border-radius: 4px;
+    border-radius: 6px;
     height: 36px;
     font-weight: bold;
     display: flex;

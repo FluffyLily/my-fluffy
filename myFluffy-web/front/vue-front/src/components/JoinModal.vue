@@ -10,7 +10,7 @@
             <font-awesome-icon icon="envelope" class="email-icon" /> Sign up with Email
         </button>
         <div class="sub-text">
-            Already have an account? <a href="/login">Sign in</a>
+            Already have an account? <a href="#" @click.prevent="$emit('switch-to-login')">Sign in</a>
         </div>
         <div class="legal-text">
             Click "Sign up" to agree to My fluffy’s <a href="#">Terms of Service</a> and<br> 
@@ -24,6 +24,7 @@
 function loginWithGoogle() {
     window.location.href = 'http://localhost:8082/oauth2/authorization/google'
 }
+
 // function loginWithKakao() {
 //     window.location.href = 'http://localhost:8082/oauth2/authorization/kakao'
 // }

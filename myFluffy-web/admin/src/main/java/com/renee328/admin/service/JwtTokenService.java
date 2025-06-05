@@ -102,12 +102,12 @@ public class JwtTokenService {
     }
 
     public List<GrantedAuthority> extractAuthorities(String token) {
-        String role = extractRoleFromToken(token);  // 토큰에서 권한 정보를 추출하는 메서드 구현 필요
+        String role = extractRoleFromToken(token);
         return Collections.singletonList(new SimpleGrantedAuthority(role));
     }
     public String extractRoleFromToken(String token) {
         try {
-            // JWT 토큰에서 클레임 정보를 가져옴
+
             String role = jwtManager.getClaims(token).get("role", String.class);
 
             if (role == null) {

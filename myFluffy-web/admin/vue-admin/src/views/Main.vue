@@ -25,7 +25,7 @@
       </div>
       <div class="card stat-card yellow-border">
         <h2>👥 회원 수</h2>
-        <p>2,148명 / 최근 7일 25명</p>
+        <p>총 {{ userSummary.totalCount }}명 / 최근 7일 {{ userSummary.weeklyCount }}명</p>
       </div>
       <div class="card stat-card violet-border">
         <h2>🔧 관리자 수</h2>
@@ -46,9 +46,9 @@
       <div class="card activity-card">
         <h3>🆕 최근 가입 회원</h3>
         <ul>
-          <li>👤 홍길동 - 2025.04.28</li>
-          <li>👤 김철수 - 2025.04.27</li>
-          <li>👤 이영희 - 2025.04.27</li>
+          <li v-for="(user, index) in recentUsers" :key="index">
+            👤 {{ user.loginId }} - {{ formatDate(user.createdAt) }}
+          </li>
         </ul>
       </div>
     </div>
@@ -62,10 +62,10 @@
     <div class="card quick-action-card">
       <h3>⚡ 빠른 작업</h3>
       <div class="quick-buttons">
-        <button class="btn-add" @click="goToBoardCreate">게시판 생성</button>
-        <button class="btn-post" @click="goToPostCreate">게시글 작성</button>
-        <button class="btn-admin" @click="goToAdminCreate">관리자 추가</button>
-        <button class="btn-search">회원 검색</button>
+        <button class="btn-add" @click="goToBoard">게시판 생성</button>
+        <button class="btn-post" @click="goToPost">게시글 작성</button>
+        <button class="btn-admin" @click="goToAdmin">관리자 추가</button>
+        <button class="btn-search" @click="goToUser">회원 검색</button>
       </div>
     </div>
   </div>
@@ -103,9 +103,11 @@ const openNoticeModal = () => {
 const router = useRouter();
 const authStore = useAuthStore();
 const recentPosts = ref([]);
+const recentUsers = ref([]);
 const boardCount = ref(0);
 const postSummary = ref({ totalCount: 0, todayCount: 0 });
 const adminCount = ref(0);
+const userSummary = ref({ totalCount: 0, weeklyCount: 0 });
 const formatDate = (date) => {
   return format(new Date(date), 'yyyy-MM-dd');
 };
@@ -124,14 +126,16 @@ const fetchWeeklyPostStats = async () => {
 
 const fetchDashboardStats = async () => {
   try {
-    const [boardRes, postRes, adminRes] = await Promise.all([
+    const [boardRes, postRes, adminRes, userRes] = await Promise.all([
       apiClient.get('/board/count'),
       apiClient.get('/post/count-summary'),
-      apiClient.get('/admin/count')
+      apiClient.get('/admin/count'),
+      apiClient.get('/user/count-summary')
     ])
     boardCount.value = boardRes.data.totalCount
     postSummary.value = postRes.data
     adminCount.value = adminRes.data.totalCount
+    userSummary.value = userRes.data
   } catch (e) {
     console.error('대시보드 통계 불러오기 실패:', e)
   }
@@ -157,21 +161,45 @@ const fetchRecentPosts = async () => {
   }
 }
 
-const goToBoardCreate = () => {
+const fetchRecentUsers = async () => {
+  try {
+    const response = await apiClient.post('/user/list', {
+      offset: 0,
+      limit: 3,
+      sort: 'recent'
+    }, {
+      headers: { Authorization: `Bearer ${authStore.accessToken}` }
+    });
+
+    recentUsers.value = response.data.users.map(user => ({
+      loginId: user.loginId,
+      createdAt: user.createdAt
+    }))
+  } catch (error) {
+    console.error('최근 등록한 회원 불러오기 실패:', error)
+  }
+}
+
+const goToBoard = () => {
   router.push({ name: 'Board' })
 }
 
-const goToPostCreate = () => {
+const goToPost = () => {
   router.push({ name: 'WritePost' })
 }
 
-const goToAdminCreate = () => {
+const goToAdmin = () => {
   router.push({ name: 'Admin' })
+}
+
+const goToUser = () => {
+  router.push({ name: 'User' })
 }
 
 onMounted(() => {
   fetchDashboardStats();
   fetchRecentPosts();
+  fetchRecentUsers();
   fetchWeeklyPostStats();
   fetchRecentNotice();
 })

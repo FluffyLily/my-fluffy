@@ -8,7 +8,6 @@ import java.util.Collection;
 
 public class SecurityUtil {
 
-    // 현재 로그인한 사용자의 ID(userId) 가져오기
     public static Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails) {
@@ -37,7 +36,7 @@ public class SecurityUtil {
                 return authorities.iterator().next().getAuthority(); // 첫 번째 권한 반환
             }
         }
-        return null;  // 로그인하지 않은 경우
+        return null;
     }
 
     // 특정 역할을 가진 사용자인지 확인

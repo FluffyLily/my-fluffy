@@ -16,14 +16,28 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import JoinModal from '@/components/JoinModal.vue'
+import JoinModal from '../components/JoinModal.vue'
+import apiClient from '../api/axios'
 
 const router = useRouter();
 const showJoinModal = ref(false)
 const showStartButton = ref(window.innerWidth > 767)
 
-const openJoinModal = () => {
-    showJoinModal.value = true
+const openJoinModal = async () => {
+    try {
+        const response = await apiClient.get('/auth/oauth/me')
+        console.log('[me 응답]', response.data)
+        if (response.data && response.data.loginId) {
+            console.log('[로그인 상태 감지됨] → /blog 이동')
+            router.push('/blog')
+            return
+        }
+        console.log('[비로그인 상태 → 모달]')
+        showJoinModal.value = true
+    } catch (e) {
+        console.error('[에러 발생]', e)
+        showJoinModal.value = true
+    }
 }
 
 const closeJoinModal = () => {

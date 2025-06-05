@@ -104,7 +104,7 @@
         <div class="form-group">
           <label>정렬 순서</label>
           <select v-model="newPost.sortOrder" class="form-control">
-            <option value="">정렬 순서</option>
+            <option value="null">정렬 순서</option>
             <option value="1">1순위</option>
             <option value="2">2순위</option>
             <option value="3">3순위</option>
@@ -237,7 +237,7 @@ const editorConfig = reactive({
   simpleUpload: {
     uploadUrl: '/api/post/upload-image',
     headers: {
-      'Authorization': `Bearer ${authStore.accessToken}`,  // 인증 헤더
+      'Authorization': `Bearer ${authStore.accessToken}`,
     }
   },
   table: {
@@ -306,7 +306,7 @@ const selectTag = (tag) => {
 };
 // 단어 입력 후 # 태그 자동 입력
 const addTag = () => {
-  if (newPost.postCategory.length >= 3) return; // 최대 3개 제한
+  if (newPost.postCategory.length >= 3) return;
   const value = tagInput.value.trim().replace(/^#/, '');
   if (value && !newPost.postCategory.includes(value)) {
     newPost.postCategory.push(value);
@@ -472,7 +472,6 @@ const deletePost = async () => {
     headers: { Authorization: `Bearer ${authStore.accessToken}` } 
     });
     if (response.data.success) {
-      console.log("게시글 삭제 [postTitle]: ", selectedPostTitle);
 
         await apiClient.delete(`/post/delete/${selectedPostId.value}`, {
             headers: { Authorization: `Bearer ${authStore.accessToken}` },
@@ -584,7 +583,7 @@ select.form-control {
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.3s ease, border-color 0.3s ease;
   display: inline-flex;
@@ -634,6 +633,7 @@ select.form-control {
   font-weight: normal;
   margin-left: 6px;
 }
+
 .word-count {
   color: var(--secondary-color);
 }
@@ -686,30 +686,106 @@ select.form-control {
   }
 }
 
-.modal-footer {
-  display: flex;
-}
+// === Modal===
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 1050;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
 
-.modal-footer .btn-primary {
-  background-color: var(--button-add-color);
-  border-color: var(--button-add-color);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-}
+  .modal-dialog {
+    max-width: 500px;
+    width: 100%;
+    margin: 0 auto;
 
-.modal-footer .btn-primary:hover {
-  background-color: var(--button-hover-add);
-  border-color: var(--button-hover-add);
-}
+    .modal-content {
+      background-color: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 
-.modal-footer .btn-secondary {
-  background-color: var(--button-close-color);
-  border-color: var(--button-close-color);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-}
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #dee2e6;
 
-.modal-footer .btn-secondary:hover {
-  background-color: var(--button-hover-close);
-  border-color: var(--button-hover-close);
+          .modal-title {
+            color: var(--button-danger-color);
+            font-size: 1.6rem;
+            font-weight: 600;
+            text-align: center;
+            flex: 1;
+          }
+      }
+
+      .modal-body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1.25rem 1.5rem;
+        gap: 0rem;
+
+        label {
+          color: var(--text-color);
+          font-size: 1rem;
+          font-weight: 500;
+          display: block;
+          margin-bottom: 10px;
+          text-align: center;
+        }
+        
+        input[type="password"] {
+          width: 100%;
+          max-width: 280px;
+        }
+      }
+
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+
+        .btn {
+          margin-top: 0;
+          margin-bottom: 0;
+          padding: 0.5rem 1rem;
+          font-size: 0.85rem;
+          min-width: auto;
+          transition: background-color 0.3s ease, border-color 0.3s ease;
+
+          &.btn-primary {
+            background-color: var(--button-add-color);
+            border-color: var(--button-add-color);
+
+            &:hover {
+              background-color: var(--button-hover-add);
+              border-color: var(--button-hover-add);
+            }
+          }
+
+          &.btn-secondary {
+            background-color: var(--button-close-color);
+            border-color: var(--button-close-color);
+
+            &:hover {
+              background-color: var(--button-hover-close);
+              border-color: var(--button-hover-close);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 </style>
 
@@ -724,7 +800,6 @@ select.form-control {
   border-radius: 4px;
 }
 
-/* 툴바 및 아이콘 색상 보정 */
 .ck-toolbar,
 .ck-toolbar .ck-button__label,
 .ck-toolbar .ck-dropdown__button .ck-button__label {
@@ -734,4 +809,5 @@ select.form-control {
 .ck-toolbar .ck-icon {
   fill: black !important;
 }
+
 </style>

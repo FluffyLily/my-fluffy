@@ -8,6 +8,7 @@ import com.renee328.mapper.PostImageMapper;
 import com.renee328.mapper.PostMapper;
 import com.renee328.mapper.PostTagMapper;
 import com.renee328.mapper.TagMapper;
+import com.renee328.service.PostService;
 import jdk.javadoc.doclet.Taglet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class PostServiceImpl implements com.renee328.service.PostService {
+public class PostServiceImpl implements PostService {
     private final PostMapper postMapper;
     private final TagMapper tagMapper;
     private final PostTagMapper postTagMapper;
@@ -71,7 +72,7 @@ public class PostServiceImpl implements com.renee328.service.PostService {
         if (postDto.getImages() != null && !postDto.getImages().isEmpty()) {
             for (PostImageDto postImageDto : postDto.getImages()) {
                 postImageDto.setPostId(postDto.getPostId());
-                postImageMapper.insertPostImage(postImageDto);  // 이미지 저장
+                postImageMapper.insertPostImage(postImageDto);
             }
         }
     }
@@ -108,8 +109,8 @@ public class PostServiceImpl implements com.renee328.service.PostService {
         // 새로운 이미지 저장
         if (postDto.getImages() != null && !postDto.getImages().isEmpty()) {
             for (PostImageDto postImageDto : postDto.getImages()) {
-                postImageDto.setPostId(postDto.getPostId());  // 게시글과 이미지 연결
-                postImageMapper.insertPostImage(postImageDto);  // 새 이미지 저장
+                postImageDto.setPostId(postDto.getPostId());
+                postImageMapper.insertPostImage(postImageDto);
             }
         }
     }

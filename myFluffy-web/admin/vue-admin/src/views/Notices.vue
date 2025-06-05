@@ -15,7 +15,7 @@
               type="text"
               v-model="searchCondition.searchKeyword"
               @keyup.enter="fetchNotices"
-              placeholder="제목이나 내용을 입력"
+              placeholder="제목이나 내용 입력"
             />
             <button class="search-button" @click="fetchNotices">검색</button>
             <button class="reset-button" @click="resetSearch">초기화</button>
@@ -188,6 +188,7 @@ const formatDate = (date) => {
 
 const resetSearch = () => {
   searchCondition.searchKeyword = '';
+  searchCondition.sort = 'recent';
   fetchNotices();
 };
 
@@ -386,7 +387,7 @@ onMounted(() => {
     }
 
     input[type="text"] {
-      width: 320px; /* 검색 필드 넓이 확장 */
+      width: 400px; /* 검색 필드 넓이 확장 */
       max-width: 100%;
       background-color: var(--almond-cream);
       outline: none;

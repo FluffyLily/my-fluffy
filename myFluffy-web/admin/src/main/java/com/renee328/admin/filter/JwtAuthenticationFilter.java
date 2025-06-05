@@ -38,7 +38,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = resolveToken(request);
 
-        // 토큰이 없을 경우 필터 진행
         if (!StringUtils.hasText(token)) {
             chain.doFilter(request, response);
             return;

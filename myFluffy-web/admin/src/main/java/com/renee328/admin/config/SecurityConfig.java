@@ -54,8 +54,7 @@ public class SecurityConfig {
                 )
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .logout(logout -> logout
-                        .logoutUrl("/api/logout") // 로그아웃 URL
-                        .logoutSuccessUrl("/") // 로그아웃 성공 시 이동할 페이지
+                        .logoutSuccessUrl("/")
                 );
 
         return http.build();

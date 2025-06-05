@@ -11,7 +11,10 @@ public enum SearchType implements BaseEnum {
     TITLE("title"),
     CONTENT("content"),
     AUTHOR_NAME("authorName"),
-    POST_CATEGORY("postCategory");
+    POST_CATEGORY("postCategory"),
+    USER_NAME("userName"),
+    LOGIN_ID("loginId"),
+    EMAIL("email");
 
     private final String value;
 

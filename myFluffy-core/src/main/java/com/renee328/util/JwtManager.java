@@ -35,13 +35,13 @@ public class JwtManager {
 
     public boolean validateToken(String token) {
         try {
-            return getClaims(token).getExpiration().after(new Date()); // 만료 확인
+            return getClaims(token).getExpiration().after(new Date());
         } catch (ExpiredJwtException e) {
-            System.out.println("❌ JWT 만료됨: " + e.getMessage());
-            return false; // 만료된 경우 false 반환
+            System.out.println(">> JWT 만료됨: " + e.getMessage());
+            return false;
         } catch (JwtException | IllegalArgumentException e) {
-            System.out.println("❌ JWT 유효성 검증 실패: " + e.getMessage());
-            return false; // 서명 검증 실패 등 기타 예외 처리
+            System.out.println(">> JWT 유효성 검증 실패: " + e.getMessage());
+            return false;
         }
     }
 

@@ -4,12 +4,11 @@
 
 <script setup>
 import { onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import apiClient from "../api/axios";
 
 const router = useRouter()
-const route = useRoute()
 const authStore = useAuthStore()
 
 onMounted(async () => {

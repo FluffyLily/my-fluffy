@@ -217,9 +217,11 @@ const fetchPosts = async () => {
 };
 
 const resetSearch = () => {
+  searchCondition.boardId = null;
   searchCondition.searchKeyword = '';
   searchCondition.searchType = null;
   searchCondition.isVisible = false;
+  searchCondition.sort = 'recent';
   searchCondition.offset = 0;
   fetchPosts();
 };
@@ -394,7 +396,7 @@ onMounted(async () => {
       opacity: 0.9;
     }
 
-    // Checkbox label and input styles
+    // Checkbox
     label {
       display: flex;
       align-items: center;
@@ -580,7 +582,6 @@ onMounted(async () => {
   font-weight: bold;
   cursor: pointer;
 }
-
 
 .pagination button:disabled {
   background-color: #ccc;

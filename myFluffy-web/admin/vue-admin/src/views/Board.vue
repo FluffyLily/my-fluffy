@@ -916,7 +916,7 @@ p {
   text-align: center;
   label {
     font-size: 1rem;
-    font-weight: 500; /* 기존보다 덜 두꺼운 폰트 */
+    font-weight: 500;
     display: block;
     margin-bottom: 10px;
     text-align: center;
@@ -959,19 +959,4 @@ p {
 .color-seafoam { background-color: var(--seafoam-teal); }
 .color-honey   { background-color: var(--sun-honey); }
 
-// // ===== Modal 타이틀 색상 =====
-// .modal-header {
-//   .category-title {
-//     color: var(--peach-sherbet);
-//   }
-//   .board-title {
-//     color: var(--avocado-frost);
-//   }
-//   .edit-title {
-//     color: var(--button-warning-color);
-//   }
-//   .delete-title {
-//     color: var(--button-danger-color);
-//   }
-// }
 </style>

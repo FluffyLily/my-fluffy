@@ -33,7 +33,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String token = extractTokenFromCookie(request);
+
         if (StringUtils.hasText(token) && jwtManager.validateToken(token)) {
+            System.out.println("[JwtFilter] 토큰 유효함");
             Claims claims = jwtManager.getClaims(token);
             String loginId = claims.getSubject();
             String role = claims.get("role", String.class);
