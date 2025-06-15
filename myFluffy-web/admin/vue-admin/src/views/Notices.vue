@@ -149,8 +149,13 @@ const currentPage = computed(() => Math.floor(searchCondition.offset / searchCon
 const totalPages = computed(() => Math.ceil(totalCount.value / searchCondition.limit));
 
 const goToPage = (page) => {
-  if (page < 1 || page > totalPages.value) return;
-  searchCondition.offset = (page - 1) * searchCondition.limit;
+  const maxPage = totalPages.value;
+  if (page < 1 || page > maxPage) return;
+
+  const nextOffset = (page - 1) * searchCondition.limit;
+  const maxOffset = Math.max(0, (totalPages.value - 1)) * searchCondition.limit;
+  searchCondition.offset = nextOffset > maxOffset ? 0 : nextOffset;
+
   fetchNotices();
 };
 
@@ -169,17 +174,26 @@ const visiblePages = computed(() => {
 
 // 공지 목록 조회
 const fetchNotices = async () => {
-  try {
-    const response = await apiClient.post('/notice', searchCondition, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
-    });
-    notices.value = response.data.notices;
-    totalCount.value = response.data.totalCount; // 전체 개수 반영
-  } catch (error) {
-    console.error('공지 목록 조회 실패:', error);
-    notices.value = [];
-    totalCount.value = 0;
-  }
+  
+    try {
+      const response = await apiClient.post('/notice', searchCondition, {
+        headers: { Authorization: `Bearer ${authStore.accessToken}` }
+      });
+      notices.value = response.data.notices;
+      totalCount.value = response.data.totalCount;
+
+      // offset 유효성 검사 및 보정 후 페이지 이동
+      const maxOffset = Math.max(0, (totalPages.value - 1)) * searchCondition.limit;
+      if (searchCondition.offset > maxOffset) {
+        searchCondition.offset = 0;
+        goToPage(1);
+        return;
+      }
+    } catch (error) {
+      console.error('공지 목록 조회 실패:', error);
+      notices.value = [];
+      totalCount.value = 0;
+    }
 };
 
 const formatDate = (date) => {
@@ -338,6 +352,7 @@ onMounted(() => {
   flex-direction: column;
   height: 100vh;
   background-color: #f8f9fa;
+  min-width: 1200px;
 
   .page-container {
     flex: 1;
@@ -349,6 +364,7 @@ onMounted(() => {
     scroll-behavior: smooth;
 
     .page-content {
+      flex: 1;
       background-color: white;
       padding: 20px;
       border-radius: 10px;
@@ -358,8 +374,7 @@ onMounted(() => {
         font-size: 2rem;
         font-weight: bold;
         color: var(--sun-honey);
-        margin-top: 14px;
-        margin-bottom: 30px;
+        margin: 14px 0 30px 0;
       }
     }
   }
@@ -387,7 +402,7 @@ onMounted(() => {
     }
 
     input[type="text"] {
-      width: 400px; /* 검색 필드 넓이 확장 */
+      width: 400px;
       max-width: 100%;
       background-color: var(--almond-cream);
       outline: none;
@@ -458,6 +473,7 @@ onMounted(() => {
     text-align: center;
     padding: 12px 14px;
     font-size: 14px;
+    white-space: nowrap;
   }
 
   th {
@@ -492,6 +508,8 @@ onMounted(() => {
   th:nth-child(3),
   td:nth-child(3) {
     width: 35%;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   // 등록일
@@ -710,7 +728,5 @@ onMounted(() => {
     }
   }
 }
-
-// 공지 내용 모달
 
 </style>

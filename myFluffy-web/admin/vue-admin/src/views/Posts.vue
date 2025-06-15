@@ -40,7 +40,7 @@
                 type="checkbox"
                 v-model="searchCondition.isVisible"
               />
-              <label>비노출 글 제외</label>
+              <label>비노출 제외</label>
             </div>
             <button @click="fetchPosts">검색</button>
             <button class="reset-button" @click="resetSearch">초기화</button>
@@ -117,6 +117,7 @@ import apiClient from '../api/axios.js';
 import { useAuthStore } from '../stores/auth.js';
 import { useRouter } from 'vue-router';
 import { useRoute } from 'vue-router';
+import { onBeforeRouteUpdate } from 'vue-router';
 
 const route = useRoute();
 
@@ -145,37 +146,21 @@ const getBoardColorClass = (boardName) => {
   return boardColorMap[boardName];
 };
 
-const props = defineProps({
-  boardId: {
-    type: Number,
-    default: null
-  },
-  limit: {
-    type: Number,
-    default: 10
-  },
-  sort: {
-    type: String,
-    default: 'recent'
-  }
-});
-
 const authStore = useAuthStore();
 const router = useRouter();
 const searchCondition = reactive({
-  boardId: props.boardId,
-  isVisible: false,
-  postCategory: '',
-  searchKeyword: '',
-  searchType: null,
-  sort: props.sort,
-  offset: 0,
-  limit: props.limit
-})
+  boardId: route.params.boardId ? Number(route.params.boardId) : null,
+  offset: route.query.offset ? Number(route.query.offset) : 0,
+  searchKeyword: route.query.searchKeyword || '',
+  searchType: route.query.searchType || null,
+  sort: route.query.sort || 'recent',
+  isVisible: route.query.isVisible === 'true',
+  limit: 10
+});
 const boards = ref([]);
 const totalCount = ref(0);
 const posts = ref([]);
-// focusedPostId 받기
+
 const focusedId = ref(
   route.query.focusedPostId ? Number(route.query.focusedPostId) : null
 );
@@ -192,7 +177,8 @@ const fetchBoards = async () => {
 
 const fetchPosts = async () => {
   try {
-    const response = await apiClient.post('/post/list',
+    const response = await apiClient.post(
+      '/post/list',
       {
         ...searchCondition,
         isVisible: searchCondition.isVisible ? true : null
@@ -208,8 +194,16 @@ const fetchPosts = async () => {
         boardName: board ? board.boardName : '알 수 없음'
       };
     });
-
+    totalCount.value = 0;
     totalCount.value = response.data.totalCount;
+
+    // offset 유효성 검사 및 보정 후 페이지 이동
+    const maxOffset = Math.max(0, (totalPages.value - 1)) * searchCondition.limit;
+    if (searchCondition.offset > maxOffset) {
+      searchCondition.offset = 0;
+      goToPage(1);
+      return;
+    }
   } catch (error) {
     console.error('게시글 목록 조회 실패:', error);
     posts.value = [];
@@ -236,6 +230,11 @@ const goToPost = (post) => {
     },
     query: {
       boardName: board ? board.boardName : null,
+      offset: searchCondition.offset,
+      boardId: searchCondition.boardId,
+      searchKeyword: searchCondition.searchKeyword,
+      searchType: searchCondition.searchType,
+      isVisible: searchCondition.isVisible ? 'true' : 'false'
     }
   });
 };
@@ -248,14 +247,15 @@ const currentPage = computed(() => Math.floor(searchCondition.offset / searchCon
 const totalPages = computed(() => Math.ceil(totalCount.value / searchCondition.limit));
 
 const goToPage = (page) => {
-  if (page < 1 || page > totalPages.value) return;
-  searchCondition.offset = (page - 1) * searchCondition.limit;
+  const safePage = Math.min(page, totalPages.value);
+  if (safePage < 1) return;
+  searchCondition.offset = (safePage - 1) * searchCondition.limit;
   fetchPosts();
 };
 
 const visiblePages = computed(() => {
   const total = totalPages.value;
-  const current = currentPage.value;
+  const current = Math.min(currentPage.value, total);
   const delta = 2;
   const pages = [];
 
@@ -280,29 +280,23 @@ const goToWritePost = () => {
   }
 };
 
-watch(() => props.boardId, (newBoardId) => {
-  searchCondition.boardId = newBoardId;
-}, { immediate: true });
+// offset, searchKeyword, searchType, isVisible 변화 감지
+onBeforeRouteUpdate((to, from, next) => {
+  if (to.query.offset !== undefined) {
+    searchCondition.offset = Number(to.query.offset);
+  }
+  if (to.query.searchKeyword !== undefined) {
+    searchCondition.searchKeyword = to.query.searchKeyword;
+  }
+  if (to.query.searchType !== undefined) {
+    searchCondition.searchType = to.query.searchType;
+  }
+  if (to.query.isVisible !== undefined) {
+    searchCondition.isVisible = to.query.isVisible === 'true';
+  }
+  next();
+});
 
-watch(() => searchCondition.boardId,
-  (newBoardId) => {
-    searchCondition.offset = 0;
-    fetchPosts();
-
-
-    if (newBoardId) {
-      router.replace({
-        name: 'PostManagement',
-        params: { boardId: newBoardId }
-      });
-    } else {
-      router.replace({
-        name: 'PostManagement'
-      });
-    }
-  },
-  { immediate: true }
-);
 
 onMounted(async () => {
   await fetchBoards();
@@ -385,6 +379,7 @@ onMounted(async () => {
       font-weight: bold;
       cursor: pointer;
       transition: background-color 0.2s;
+      white-space: nowrap;
     }
 
     button.reset-button {
@@ -396,7 +391,6 @@ onMounted(async () => {
       opacity: 0.9;
     }
 
-    // Checkbox
     label {
       display: flex;
       align-items: center;
@@ -432,20 +426,15 @@ onMounted(async () => {
       flex: 1;
       min-width: 200px;
     }
-  }
 
-  .search-group select {
-    background-color: var(--almond-cream);
-    border: 1px solid #d6cfc3;
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 14px;
-    padding-right: 24px;
-    background-image: url("data:image/svg+xml,%3Csvg fill='%23d6cfc3' height='18' viewBox='0 0 24 24' width='18' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 6px center;
-    background-size: 16px 16px;
-    appearance: none;
+    select {
+      padding-right: 24px;
+      background-image: url("data:image/svg+xml,%3Csvg fill='%23d6cfc3' height='18' viewBox='0 0 24 24' width='18' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+      background-size: 16px 16px;
+      appearance: none;
+    }
   }
 }
 
@@ -483,13 +472,6 @@ onMounted(async () => {
   }
 }
 
-.post-list-content h3 {
-  font-size: 20px;
-  font-weight: bold;
-  color: var(--card-border-purple);
-  margin-bottom: 10px;
-}
-
 .post-list-table {
   width: 100%;
   border-collapse: separate;
@@ -499,6 +481,7 @@ onMounted(async () => {
     text-align: center;
     padding: 12px 14px;
     font-size: 14px;
+    white-space: nowrap;
   }
 
   th {
@@ -516,22 +499,37 @@ onMounted(async () => {
       font-size: 15px;
       font-weight: 500;
       color: #333;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
     }
+  }
+
+  td:last-child {
+    max-width: 100px;
   }
 
   tr {
     cursor: pointer;
   }
 
-  .category-tag {
+  .category-tag,
+  .board-tag {
     display: inline-block;
+    font-weight: 400;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 14px;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .category-tag {
     background-color: var(--rose-dust);
     color: black;
-    font-weight: 400;
     border-radius: 14px;
-    padding: 2px 8px;
     margin-right: 6px;
-    font-size: 14px;
   }
 
   tr.focused {
@@ -546,13 +544,6 @@ onMounted(async () => {
   padding: 0;
 }
 
-.board-tag {  
-  display: inline-block;
-  font-weight: 400;
-  border-radius: 12px;
-  padding: 2px 8px;
-  font-size: 14px;
-}
 .board-tag--coral { background-color: var(--coral-red); color: white; }
 .board-tag--mintgray { background-color: var(--mint-gray); color: black; }
 .board-tag--gold { background-color: var(--golden-sand); color: black; }

@@ -651,6 +651,7 @@ import { useRouter } from 'vue-router';
   flex-direction: column;
   height: 100vh;
   background-color: var(--background-color);
+  min-width: 1200px;
 
   .page-container {
     display: flex;

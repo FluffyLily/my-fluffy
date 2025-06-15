@@ -7,7 +7,7 @@
           <div class="filter-item">
             <select v-model="searchCondition.userTypeCode" @change="fetchUsers" class="instant-filter">
               <option :value="null">전체 회원</option>
-              <option value="normal">일반 회원</option>
+              <option value="normal">통합 회원</option>
               <option value="google">구글 회원</option>
               <option value="kakao">카카오 회원</option>
               <option value="suspended">정지 회원</option>
@@ -110,6 +110,14 @@ const fetchUsers = async () => {
     });
     users.value = response.data.users;
     totalCount.value = response.data.totalCount;
+
+    // offset 유효성 검사 및 보정 후 페이지 이동
+    const maxOffset = Math.max(0, (totalPages.value - 1)) * searchCondition.limit;
+    if (searchCondition.offset > maxOffset) {
+      searchCondition.offset = 0;
+      goToPage(1);
+      return;
+    }
   } catch (e) {
     console.error('회원 목록 로딩 실패:', e);
     users.value = [];
@@ -121,7 +129,6 @@ const resetSearch = () => {
   searchCondition.sort = 'recent';
   searchCondition.searchType = null;
   searchCondition.searchKeyword = '';
-  searchCondition.offset = 0;
   fetchUsers();
 };
 
@@ -133,14 +140,15 @@ const currentPage = computed(() => Math.floor(searchCondition.offset / searchCon
 const totalPages = computed(() => Math.ceil(totalCount.value / searchCondition.limit));
 
 const goToPage = (page) => {
-  if (page < 1 || page > totalPages.value) return;
-  searchCondition.offset = (page - 1) * searchCondition.limit;
-  fetchUsers();
+  const safePage = Math.min(page, totalPages.value);
+  if (safePage < 1) return;
+  searchCondition.offset = (safePage - 1) * searchCondition.limit;
+  fetchPosts();
 };
 
 const visiblePages = computed(() => {
   const total = totalPages.value;
-  const current = currentPage.value;
+  const current = Math.min(currentPage.value, total);
   const delta = 2;
   const pages = [];
 
@@ -193,7 +201,7 @@ onMounted(fetchUsers);
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 20px;
-  justify-content: center;
+  
 
   .filter-item {
     display: flex;
@@ -243,6 +251,7 @@ onMounted(fetchUsers);
   }
 
   .search-group {
+    flex: 1;
 
     select,
     input {
@@ -254,8 +263,8 @@ onMounted(fetchUsers);
     }
 
     input {
-      min-width: 120px;
-      width: 400px;
+      flex: 1;
+      min-width: 200px;
     }
 
     select {
@@ -278,6 +287,7 @@ onMounted(fetchUsers);
     text-align: center;
     padding: 12px 14px;
     font-size: 14px;
+    white-space: nowrap;
   }
 
   th {

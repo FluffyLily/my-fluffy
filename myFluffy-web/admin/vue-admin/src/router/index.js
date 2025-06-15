@@ -50,10 +50,6 @@ const routes = [
     path: '/post/:boardId?',
     name: 'PostManagement',
     component: Posts,
-    props: route => ({
-      boardId: route.params.boardId ? Number(route.params.boardId) : null,
-      focusedPostId: route.query.focusedPostId ? Number(route.query.focusedPostId) : null
-    }),
     meta: { requiresAuth: true }
   },
   {

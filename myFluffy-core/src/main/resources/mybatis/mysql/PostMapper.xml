@@ -56,7 +56,7 @@
         FROM posts
         WHERE 1 = 1
         <include refid="commonSearchCondition" />
-        <if test="isVisible != null">
+        <if test="isVisible != null and isVisible == true">
             AND IS_VISIBLE = 'Y'
         </if>
         <choose>
@@ -78,6 +78,9 @@
         FROM posts
         WHERE 1 = 1
         <include refid="commonSearchCondition" />
+        <if test="isVisible != null and isVisible == true">
+            AND IS_VISIBLE = 'Y'
+        </if>
     </select>
 
     <!-- 오늘 작성된 게시글 수 조회 -->

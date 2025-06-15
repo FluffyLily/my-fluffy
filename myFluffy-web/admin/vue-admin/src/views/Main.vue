@@ -4,9 +4,9 @@
     <p class="main-subtitle">전체 시스템 현황을 한눈에 확인하세요</p>
     <!-- 시스템 공지 (최근 공지) -->
     <div class="card notice-card" @click="openNoticeModal">
-      <h3>📢 시스템 공지</h3>
-      <p v-if="recentNotice">📅 {{ formatDate(recentNotice.createdAt) }} | 📌 {{ recentNotice.title }}</p>
-      <p v-else>📌 최근 공지가 없습니다.</p>
+      <h3><span class="emoji-text">📢</span> 시스템 공지</h3>
+      <p v-if="recentNotice"><span class="emoji-text">📅</span> {{ formatDate(recentNotice.createdAt) }} | <span class="emoji-text">📌</span> {{ recentNotice.title }}</p>
+      <p v-else><span class="emoji-text">📌</span> 최근 공지가 없습니다.</p>
     </div>
 
     <NoticeModal 
@@ -16,51 +16,51 @@
     />
     <div class="summary-cards">
       <div class="card stat-card pink-border">
-        <h2>🔖 게시판 수</h2>
+        <h2><span class="emoji-text">🔖</span> 게시판 수</h2>
         <p>{{ boardCount }}개</p>
       </div>
       <div class="card stat-card mint-border">
-        <h2>✏️ 게시글 수</h2>
+        <h2><span class="emoji-text">✏️</span> 게시글 수</h2>
         <p>{{ postSummary.totalCount }}건 / 오늘 {{ postSummary.todayCount }}건</p>
       </div>
       <div class="card stat-card yellow-border">
-        <h2>👥 회원 수</h2>
+        <h2><span class="emoji-text">👥</span> 회원 수</h2>
         <p>총 {{ userSummary.totalCount }}명 / 최근 7일 {{ userSummary.weeklyCount }}명</p>
       </div>
       <div class="card stat-card violet-border">
-        <h2>🔧 관리자 수</h2>
+        <h2><span class="emoji-text">🔧</span> 관리자 수</h2>
         <p>{{ adminCount }}명</p>
       </div>
     </div>
 
     <div class="card-section">
       <div class="card activity-card">
-        <h3>📌 최근 게시글</h3>
+        <h3><span class="emoji-text">📌</span> 최근 게시글</h3>
         <ul>
           <li v-for="(post, index) in recentPosts" :key="index">
-            📝 {{ post.title }} - {{ post.author }} | {{ formatDate(post.createdAt) }}
+            <span class="emoji-text">📝</span> {{ post.title }} - {{ post.author }} | {{ formatDate(post.createdAt) }}
           </li>
         </ul>
       </div>
 
       <div class="card activity-card">
-        <h3>🆕 최근 가입 회원</h3>
+        <h3><span class="emoji-text">🆕</span> 최근 가입 회원</h3>
         <ul>
           <li v-for="(user, index) in recentUsers" :key="index">
-            👤 {{ user.loginId }} - {{ formatDate(user.createdAt) }}
+            <span class="emoji-text">👤</span> {{ user.loginId }} - {{ formatDate(user.createdAt) }}
           </li>
         </ul>
       </div>
     </div>
 
     <div class="card chart-card">
-      <h3>📈 시스템 활동 추이 (최근 7일)</h3>
+      <h3><span class="emoji-text">📈</span> 시스템 활동 추이 (최근 7일)</h3>
       <p>차트 영역 (게시글 등록 추이)</p>
       <WeeklyPostChart :labels="chartLabels" :counts="chartCounts" />
     </div>
 
     <div class="card quick-action-card">
-      <h3>⚡ 빠른 작업</h3>
+      <h3><span class="emoji-text">⚡</span> 빠른 작업</h3>
       <div class="quick-buttons">
         <button class="btn-add" @click="goToBoard">게시판 생성</button>
         <button class="btn-post" @click="goToPost">게시글 작성</button>
@@ -210,6 +210,20 @@ onMounted(() => {
   padding: 2rem;
   background-color: var(--background-color);
   color: var(--text-color);
+  min-width: 1200px;
+  position: relative;
+  z-index: 0;
+  overflow-x: auto;
+}
+
+.notice-card,
+.summary-cards,
+.card-section,
+.chart-card,
+.quick-action-card {
+  position: relative;
+  z-index: 0;
+  min-width: 1200px;
 }
 
 .main-title {
@@ -239,7 +253,6 @@ onMounted(() => {
 .summary-cards {
   display: flex;
   gap: 1rem;
-  
   margin-bottom: 2rem;
 }
 
@@ -354,6 +367,10 @@ onMounted(() => {
 
 .btn-notice:hover {
   background-color: var(--highlight-yellow);
+}
+
+.emoji-text {
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
 }
 
 </style>

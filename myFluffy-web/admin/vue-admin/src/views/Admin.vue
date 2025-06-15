@@ -327,7 +327,7 @@ onMounted(fetchAdmins);
                     </button>
                   </div>
                 </template>
-                <template v-else>🚫 권한 없음</template>
+                <template v-else><span class="emoji-text">🚫</span> 권한 없음</template>
               </td>
             </tr>
           </tbody>
@@ -512,6 +512,7 @@ onMounted(fetchAdmins);
     font-size: 14px;
     text-align: center;
     padding: 12px 14px;
+    white-space: nowrap;
   }
   th {
     background-color: var(--card-bg-mint);
@@ -527,6 +528,10 @@ onMounted(fetchAdmins);
       font-weight: 600;
       color: #222;
     }
+    .emoji-text {
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+    }
+    
   }
   .role-tag {
     display: inline-block;
@@ -534,6 +539,9 @@ onMounted(fetchAdmins);
     font-size: 14px;
     border-radius: 12px;
     font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
     &--yellow { background-color: var(--highlight-yellow); color: black; }
     &--purple { background-color: var(--highlight-purple); color: white; }
     &--mint   { background-color: var(--highlight-mint); color: black; }
@@ -679,4 +687,6 @@ onMounted(fetchAdmins);
   }
 }
 
+
 </style>
+

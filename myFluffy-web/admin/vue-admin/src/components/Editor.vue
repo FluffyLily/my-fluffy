@@ -159,11 +159,12 @@ import { ref, reactive, onMounted, computed, watch } from 'vue'
 import Fuse from 'fuse.js';
 import apiClient from '../api/axios.js';
 import { useAuthStore } from '../stores/auth.js';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { hasAnyRole } from '../util/roleUtils.js';
 
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 const props = defineProps({
   boardId: {
     type: [Number, String],
@@ -380,7 +381,19 @@ const fetchPost = async () => {
 
 // 보던 게시글 목록으로 돌아가기
 const goToPostList = () => {
-  router.back();
+  router.push({
+    name: 'PostManagement',
+    params: { boardId: route.query.boardId },
+    query: {
+      offset: route.query.offset,
+      boardId: route.query.boardId,
+      boardName: route.query.boardName,
+      searchKeyword: route.query.searchKeyword,
+      searchType: route.query.searchType,
+      sort: route.query.sort,
+      isVisible: route.query.isVisible
+    }
+  });
 };
 
 // 게시글 작성하기

@@ -4,7 +4,7 @@
     <ul>
       <li v-for="item in filteredMenuItems" :key="item.name">
         <router-link 
-          :to="item.path" 
+          :to="item.path"
           @click="reloadIfSameRoute(item.path)"
         >
           <font-awesome-icon :icon="item.icon" class="menu-icon" />
@@ -43,7 +43,6 @@ const filteredMenuItems = computed(() => {
   });
 });
 
-// 동일 라우트로 이동 시 새로고침
 const reloadIfSameRoute = (path) => {
   if (route.path === path) {
     router.replace({ path: '/reload' }).then(() => {
@@ -65,6 +64,7 @@ const reloadIfSameRoute = (path) => {
   padding: 20px;
   overflow-y: auto;
   transition: transform 0.3s;
+  z-index: 10;
 
   &-header {
     font-size: 1.5rem;
@@ -86,7 +86,7 @@ const reloadIfSameRoute = (path) => {
     margin: 0;
     display: flex;
     flex-direction: column;
-    align-items: center; // 중앙 정렬
+    align-items: center;
     gap: 10px;
   }
 
@@ -101,7 +101,7 @@ const reloadIfSameRoute = (path) => {
       padding: 10px 15px;
       display: flex;
       align-items: center;
-      justify-content: center; // 가운데 정렬
+      justify-content: center;
       border-radius: 8px;
       transition: background-color 0.3s;
 
