@@ -22,12 +22,6 @@ redis:
       min-idle: 2
       max-wait: 5000ms
 
-web:
-  resources:
-    static-locations:
-      - classpath:/static/
-      - file:/Users/myAccount/Desktop/myFluffy-uploads/
-
 security:
   jwt:
     secret-key: "yourJwtSecretKey"

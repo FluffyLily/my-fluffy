@@ -4,6 +4,7 @@ spring:
     username: username
     password: password
     driver-class-name: com.mysql.cj.jdbc.Driver
+
 mybatis:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
@@ -12,6 +13,13 @@ mybatis:
   mapper-locations: classpath*:mybatis/mysql/*.xml
   type-aliases-package: com.renee328.dto
   type-handlers-package: com.renee328.handler
+
+web:
+  resources:
+    static-locations:
+      - classpath:/static/
+      - file:/Users/YourAccount/Desktop/myFluffy-uploads/
+
 logging:
   level:
     org.mybatis: DEBUG
