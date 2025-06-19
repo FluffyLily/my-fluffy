@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>admin</artifactId>
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
 
     <build>
         <resources>

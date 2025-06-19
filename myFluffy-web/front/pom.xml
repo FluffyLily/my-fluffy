@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>front</artifactId>
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
 
     <dependencies>
         <dependency>

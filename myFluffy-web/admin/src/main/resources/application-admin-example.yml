@@ -1,6 +1,8 @@
 spring:
   config:
-    import: classpath:application-core.yml
+    activate:
+      on-profile: admin-prod
+    import: classpath:application-core-prod.yml
 
   servlet:
     multipart:
@@ -12,8 +14,8 @@ server:
   port: 8081
 
 redis:
-  host: localhost
-  port: 6379
+  host: ${REDIS_HOST:localhost}
+  port: ${REDIS_PORT:6379}
   timeout: 6000ms
   lettuce:
     pool:
@@ -24,14 +26,14 @@ redis:
 
 security:
   jwt:
-    secret-key: "yourJwtSecretKey"
+    secret-key: ${JWT_SECRET_KEY}
     access-token-expiration: 900000
     refresh-token-expiration: 604800000
 
 cors:
   allowed:
-    origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
+    origin: ${CORS_ALLOWED_ORIGIN:https://admin.myfluffy.com}
 
 logging:
   level:
-    org.springframework.security: DEBUG
+    org.springframework.security: INFO

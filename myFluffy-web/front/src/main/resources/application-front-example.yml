@@ -5,17 +5,17 @@ spring:
 
   config:
     activate:
-      on-profile: front
-    import: classpath:application-core.yml
+      on-profile: front-prod
+    import: classpath:application-core-prod.yml
 
   security:
     oauth2:
       client:
         registration:
           google:
-            client-id: your-google-client-id
-            client-secret: your-google-client-secret
-            redirect-uri: "http://localhost:8082/login/oauth2/code/google"
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: "https://myfluffy.com/login/oauth2/code/google"
             scope:
               - profile
               - email
@@ -38,15 +38,15 @@ server:
 # 커스텀 설정
 app:
   oauth:
-    redirect-uri: http://localhost:5174
-  is-local: true
+    redirect-uri: https://myfluffy.com
+  is-local: false
 
 cors:
   allowed:
-    origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5174}
+    origin: ${CORS_ALLOWED_ORIGIN:https://myfluffy.com}
 
 security:
   jwt:
-    secret-key: "yourJwtSecretKey"
+    secret-key: ${JWT_SECRET_KEY}
     access-token-expiration: 900000
     refresh-token-expiration: 604800000
