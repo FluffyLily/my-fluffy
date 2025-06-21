@@ -1,9 +1,10 @@
+import.meta.env
 import axios from "axios";
 import { useAuthStore } from "../stores/auth";
 import { jwtDecode } from 'jwt-decode';
 
 const apiClient = axios.create({
-  baseURL: "http://localhost:8081/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",

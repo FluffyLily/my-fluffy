@@ -15,7 +15,7 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
-            redirect-uri: "https://myfluffy.com/login/oauth2/code/google"
+            redirect-uri: "https://myfluffy.site/login/oauth2/code/google"
             scope:
               - profile
               - email
@@ -38,12 +38,12 @@ server:
 # 커스텀 설정
 app:
   oauth:
-    redirect-uri: https://myfluffy.com
+    redirect-uri: https://myfluffy.site
   is-local: false
 
 cors:
   allowed:
-    origin: ${CORS_ALLOWED_ORIGIN:https://myfluffy.com}
+    origin: ${CORS_ALLOWED_ORIGIN:https://myfluffy.site}
 
 security:
   jwt:

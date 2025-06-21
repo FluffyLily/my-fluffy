@@ -32,7 +32,7 @@ security:
 
 cors:
   allowed:
-    origin: ${CORS_ALLOWED_ORIGIN:https://admin.myfluffy.com}
+    origin: ${CORS_ALLOWED_ORIGIN:https://cms.myfluffy.site}
 
 logging:
   level:
