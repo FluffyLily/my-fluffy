@@ -4,6 +4,7 @@ import Login from '../views/Login.vue'
 import Users from '../views/Users.vue'
 import Board from '../views/Board.vue'
 import Posts from '../views/Posts.vue'
+import PostDetail from '../views/PostDetail.vue'
 import Editor from '../components/Editor.vue';
 import Main from '../views/Main.vue'
 import Notices from '../views/Notices.vue';
@@ -66,6 +67,17 @@ const routes = [
     path: '/post/update/:boardId?/:postId?',
     name: 'UpdatePost',
     component: Editor,
+    props: route => ({
+      boardId: route.params.boardId ? Number(route.params.boardId) : null,
+      postId: route.params.postId ? Number(route.params.postId) : null,
+      boardName: route.query.boardName || null
+    }),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/post/detail/:boardId?/:postId?',
+    name: 'PostDetail',
+    component: PostDetail,
     props: route => ({
       boardId: route.params.boardId ? Number(route.params.boardId) : null,
       postId: route.params.postId ? Number(route.params.postId) : null,

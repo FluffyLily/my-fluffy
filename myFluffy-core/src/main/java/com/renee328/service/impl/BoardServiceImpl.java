@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 @Service
+@Transactional(readOnly = true)
 public class BoardServiceImpl implements BoardService {
 
     private final AdminMapper adminMapper;
@@ -31,28 +32,24 @@ public class BoardServiceImpl implements BoardService {
     }
 
     // 게시판 목록 조회하기
-    @Transactional
     @Override
     public List<BoardDto> getBoardList() {
         return boardMapper.getBoardList();
     }
 
     // 게시판 개수 조회하기
-    @Transactional
     @Override
     public int getBoardCount() {
         return boardMapper.getBoardCount();
     }
 
     // 카테고리별 게시판 목록 조회
-    @Transactional
     @Override
     public List<BoardDto> getBoardByCategoryId(Long boardCategoryId) {
         return boardMapper.getBbsListByCategoryId(boardCategoryId);
     }
 
     // 게시판 세부정보 조회하기
-    @Transactional
     @Override
     public BoardDto getBoardDetails(Long boardId) {
         BoardDto board = boardMapper.getBoardDetails(boardId);
@@ -105,14 +102,12 @@ public class BoardServiceImpl implements BoardService {
     // -------------------------- 게시판 카테고리 --------------------------
 
     // 모든 게시판 카테고리 조회
-    @Transactional
     @Override
     public List<BbsCategoryDto> getAllBoardCategories() {
         return bbsCategoryMapper.selectAllCategories();
     }
 
     // 게시판별 카테고리 목록 조회
-    @Transactional
     @Override
     public List<BbsCategoryDto> getCategoriesByBoardId(Long boardId) {
         return bbsCategoryMapper.selectCategoriesByBoardId(boardId);

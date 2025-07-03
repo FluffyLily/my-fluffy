@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
+@Transactional(readOnly = true)
 public class NoticeServiceImpl implements NoticeService {
 
     private final NoticeMapper noticeMapper;
@@ -18,26 +19,21 @@ public class NoticeServiceImpl implements NoticeService {
         this.noticeMapper = noticeMapper;
     }
 
-    @Transactional(readOnly = true)
     @Override
     public List<NoticeDto> getAllNotices(PostSearchCondition searchCondition) {
         return noticeMapper.findActiveNotices(searchCondition);
     }
 
-    @Transactional
     @Override
     public int getNoticesCount(PostSearchCondition searchCondition) {
         return noticeMapper.getNoticesCount(searchCondition);
     }
 
-
-    @Transactional(readOnly = true)
     @Override
     public NoticeDto getRecentNotice() {
         return noticeMapper.getRecentNotice();
     }
 
-    @Transactional
     @Override
     public NoticeDto getNoticeDetails(Long noticeId) {
         return noticeMapper.getNoticeDetails(noticeId);

@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
+@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
 
@@ -18,21 +19,18 @@ public class UserServiceImpl implements UserService {
     }
 
     // 회원 목록 조회하기 (필터, 검색, 정렬 조건 적용)
-    @Transactional
     @Override
     public List<UserDto> getUserList(UserSearchCondition searchCondition) {
         return userMapper.getUserList(searchCondition);
     }
 
     // 회원 수 조회하기
-    @Transactional
     @Override
     public int getUserCount(UserSearchCondition searchCondition) {
         return userMapper.getUserCount(searchCondition);
     }
 
     // 최근 7일 간의 새로운 회원 수 조회하기
-    @Transactional
     @Override
     public int getUserCountWeekly() {
         return userMapper.getUserCountWeekly();

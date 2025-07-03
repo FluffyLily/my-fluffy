@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Transactional(readOnly = true)
 public class AdminServiceImpl implements AdminService {
     private final AdminMapper adminMapper;
     private final AuthMapper authMapper;
@@ -40,14 +41,12 @@ public class AdminServiceImpl implements AdminService {
     }
 
     // 관리자 목록 조회
-    @Transactional
     @Override
     public List<AdminDto> getAdminList() {
         return adminMapper.getAdminList();
     }
 
     // 관리자 수 조회
-    @Transactional
     @Override
     public int getAdminCount() {
         return adminMapper.getAdminCount();
@@ -119,7 +118,6 @@ public class AdminServiceImpl implements AdminService {
     }
 
     // 비밀번호 인증
-    @Transactional
     @Override
     public Map<String, Boolean> verifyPassword(LoginRequest passwordRequest) {
 

@@ -71,7 +71,6 @@ public class AuthServiceImpl implements AuthService {
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     updatedUserDetails, null, updatedUserDetails.getAuthorities()
             );
-//            authentication.setDetails(updatedUserDetails.getUserId());
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
 

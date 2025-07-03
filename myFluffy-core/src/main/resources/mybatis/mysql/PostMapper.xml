@@ -156,6 +156,11 @@
         WHERE POST_ID = #{postId}
     </update>
 
+    <!-- 게시글 내용만 조회하기 -->
+    <select id="getPostContentById" parameterType="java.lang.Long" resultType="string">
+        SELECT CONTENT FROM posts WHERE POST_ID = #{postId}
+    </select>
+
     <!-- 게시글 삭제하기 -->
     <delete id="deletePost" parameterType="java.lang.Long">
         DELETE FROM posts WHERE POST_ID = #{postId}

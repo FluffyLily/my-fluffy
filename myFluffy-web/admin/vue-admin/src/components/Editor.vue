@@ -69,6 +69,8 @@
         @ready="onEditorReady"
       />
       <div id="word-count" class="word-count"></div>
+      <p v-if="isUploading" style="color: var(--secondary-color); font-size: 0.9rem;">이미지 업로드 중입니다...</p>
+      <p v-if="uploadError" style="color: red; font-size: 0.9rem;">{{ uploadError }}</p>
     </div>
 
     <!-- form-options 하단 -->
@@ -115,7 +117,7 @@
 
     <!-- 이전/작성/수정/삭제 버튼 그룹 -->
     <div class="d-flex justify-content-center gap-2 mt-3">
-      <button @click="goToPostList" class="btn btn-warning">
+      <button @click="goToPostDetail" class="btn btn-warning">
         이전으로
       </button>
       <button @click="writePost" :disabled="!canSubmit" class="btn btn-primary">
@@ -161,6 +163,9 @@ import apiClient from '../api/axios.js';
 import { useAuthStore } from '../stores/auth.js';
 import { useRouter, useRoute } from 'vue-router';
 import { hasAnyRole } from '../util/roleUtils.js';
+// 이미지 업로드 상태 및 에러 메시지
+const isUploading = ref(false);
+const uploadError = ref('');
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -204,6 +209,55 @@ const newPost = reactive({
 
 // ckeditor
 const editor = ref(null)
+
+const MAX_FILE_SIZE_MB = 3;
+
+class MyUploadAdapter {
+  constructor(loader) {
+    this.loader = loader;
+  }
+
+  upload() {
+    return this.loader.file.then(file => {
+      return new Promise((resolve, reject) => {
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+          uploadError.value = `이미지 용량은 ${MAX_FILE_SIZE_MB}MB 이하만 업로드 가능합니다.`;
+          reject(uploadError.value);
+          return;
+        }
+
+        isUploading.value = true;
+        uploadError.value = '';
+
+        const data = new FormData();
+        data.append('upload', file);
+
+        apiClient.post('/post/upload-image', data, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${authStore.accessToken}`
+          }
+        }).then(response => {
+          isUploading.value = false;
+          resolve({ default: response.data.default });
+        }).catch(err => {
+          isUploading.value = false;
+          uploadError.value = '이미지 업로드 실패';
+          reject(uploadError.value);
+        });
+      });
+    });
+  }
+
+  abort() {}
+}
+
+function CustomUploadAdapterPlugin(editor) {
+  editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+    return new MyUploadAdapter(loader);
+  };
+}
+
 const editorConfig = reactive({
   toolbar: {
     shouldNotGroupWhenFull: true,
@@ -235,12 +289,7 @@ const editorConfig = reactive({
     resizeUnit: '%',
     styles: ['full', 'side']
   },
-  simpleUpload: {
-    uploadUrl: '/api/post/upload-image',
-    headers: {
-      'Authorization': `Bearer ${authStore.accessToken}`,
-    }
-  },
+  extraPlugins: [CustomUploadAdapterPlugin],
   table: {
     contentToolbar: [
       'tableColumn',
@@ -292,7 +341,7 @@ const handleKeyDown = (event) => {
 // fuse 설정
 const fuse = computed(() => new Fuse(allTags.value, {
   includeScore: true, // 결과에 유사도 점수를 포함
-  threshold: 0.4, // 0~1 사이: 얼마나 다른 것도 허용할지 - 수치가 낮을 수록 엄격함.
+  threshold: 0.4, // 0~1 사이: 얼마나 다른 것도 허용할지 - 수치가 낮을 수록 엄격
 }));
 
 const isTagLimitReached = computed(() => newPost.postCategory.length >= 3);
@@ -366,6 +415,12 @@ const fetchPost = async () => {
     });
     Object.assign(newPost, response.data);
 
+    // 이미지 정보 유지
+    if (response.data.images?.length) {
+      newPost.images = response.data.images;
+    }
+
+    // 태그 복원
     if (!newPost.postCategory && newPost.postCategoryString) {
       newPost.postCategory = newPost.postCategoryString
         .split(',')
@@ -379,15 +434,15 @@ const fetchPost = async () => {
   }
 }
 
-// 보던 게시글 목록으로 돌아가기
-const goToPostList = () => {
+// 보던 게시글 상세로 돌아가기
+const goToPostDetail = () => {
   router.push({
-    name: 'PostManagement',
-    params: { boardId: route.query.boardId },
+    name: 'PostDetail',
+    params: { postId: props.postId },
     query: {
-      offset: route.query.offset,
       boardId: route.query.boardId,
       boardName: route.query.boardName,
+      offset: route.query.offset,
       searchKeyword: route.query.searchKeyword,
       searchType: route.query.searchType,
       sort: route.query.sort,
@@ -402,8 +457,15 @@ const writePost = async () => {
 
   const board = boards.value.find(b => b.boardId === newPost.boardId);
   newPost.boardCategoryId = board ? board.boardCategoryId : null;
-  newPost.images = extractImageUrls(newPost.content).map(url => ({ imageUrl: url }));
+  // newPost.images = extractImageUrls(newPost.content).map(url => ({ imageUrl: url }));
 
+  // 이미지 URL 추출 후, 본문 내 이미지가 하나라도 있으면 images를 덮어씀
+  const currentImages = extractImageUrls(newPost.content);
+  if (currentImages.length > 0) {
+    newPost.images = currentImages.map(url => ({ imageUrl: url }));
+  }
+
+  console.log('현재 content:', newPost.content);
   if (props.postId) {
     if (!confirm("게시글을 수정하시겠습니까?")) return;
     try {
@@ -411,7 +473,20 @@ const writePost = async () => {
         headers: { Authorization: `Bearer ${authStore.accessToken}` }
       });
       console.log('게시글 수정 성공: ', response.data);
-      router.push({ name: 'PostManagement' });
+      router.push({
+        name: 'PostDetail',
+        params: { postId: props.postId },
+        query: {
+          edited: true,
+          boardId: route.query.boardId,
+          boardName: route.query.boardName,
+          offset: route.query.offset,
+          searchKeyword: route.query.searchKeyword,
+          searchType: route.query.searchType,
+          sort: route.query.sort,
+          isVisible: route.query.isVisible
+        }
+      });
     } catch (error) {
       console.error('게시글 수정 실패: ', error);
     }
@@ -593,8 +668,8 @@ select.form-control {
 // 버튼 공통 스타일
 .btn {
   margin-top: 1rem;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
+  padding: 8px 14px;
+  font-size: 14px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -602,7 +677,7 @@ select.form-control {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 120px;
+  min-width: 80px;
   color: #fff;
 }
 
@@ -684,12 +759,14 @@ select.form-control {
   margin-top: 0.3rem;
   .tag {
     display: inline-block;
-    margin-right: 6px;
-    background-color: var(--selected-color);
-    color: white;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
+    background: var(--peach-sherbet);
+    padding: 2px 8px;
+    margin-left: 4px;
+    margin-right: 4px;
+    color: var(--text-color);
     font-size: 0.85rem;
+    border-radius: 14px;
+
     .remove-tag {
       margin-left: 3px;
       cursor: pointer;
@@ -771,8 +848,8 @@ select.form-control {
         .btn {
           margin-top: 0;
           margin-bottom: 0;
-          padding: 0.5rem 1rem;
-          font-size: 0.85rem;
+          padding: 10px 18px;
+          font-size: 14px;
           min-width: auto;
           transition: background-color 0.3s ease, border-color 0.3s ease;
 

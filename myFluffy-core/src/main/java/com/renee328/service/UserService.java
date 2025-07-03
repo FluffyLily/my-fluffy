@@ -7,12 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 public interface UserService {
-    @Transactional
     List<UserDto> getUserList(UserSearchCondition searchCondition);
 
-    @Transactional
     int getUserCount(UserSearchCondition searchCondition);
 
-    @Transactional
     int getUserCountWeekly();
 }

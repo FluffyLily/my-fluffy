@@ -7,12 +7,18 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 3MB
+      max-request-size: 15MB
 
 server:
-  port: 8081
-
+  port: 443
+  ssl:
+    enabled: true
+    key-store: file:${SSL_KEYSTORE_PATH:/home/ubuntu/cms.myfluffy.site.p12}
+    key-store-type: PKCS12
+    key-store-password: "${SSL_KEYSTORE_PASSWORD:defaultPassword}"
+    key-alias: ${SSL_KEY_ALIAS:cms}
+    
 redis:
   host: ${REDIS_HOST:localhost}
   port: ${REDIS_PORT:6379}
@@ -33,6 +39,11 @@ security:
 cors:
   allowed:
     origin: ${CORS_ALLOWED_ORIGIN:https://cms.myfluffy.site}
+
+file:
+  upload:
+    base-dir: /home/ubuntu/myFluffy-uploads
+    base-url: /uploads/images
 
 logging:
   level:

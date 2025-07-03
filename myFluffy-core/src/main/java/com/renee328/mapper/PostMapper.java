@@ -31,6 +31,9 @@ public interface PostMapper {
     // 게시글 수정하기
     void updatePost(PostDto postDto);
 
+    // 게시글 삭제 전 임시 저장된 이미지 정리
+    String getPostContentById(Long postId);
+
     // 게시글 삭제하기
     void deletePost(Long postId);
 

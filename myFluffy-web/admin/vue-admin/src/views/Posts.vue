@@ -111,7 +111,7 @@
   </div>
 </template>
 <script setup>
-import { ref, watch, onMounted, reactive, computed } from 'vue';
+import { ref, onMounted, reactive, computed } from 'vue';
 import { format } from 'date-fns';
 import apiClient from '../api/axios.js';
 import { useAuthStore } from '../stores/auth.js';
@@ -223,7 +223,7 @@ const resetSearch = () => {
 const goToPost = (post) => {
   const board = boards.value.find(b => b.boardId === post.boardId);
   router.push({
-    name: 'UpdatePost',
+    name: 'PostDetail',
     params: {
       postId: post.postId,
       boardId: post.boardId,
@@ -234,7 +234,7 @@ const goToPost = (post) => {
       boardId: searchCondition.boardId,
       searchKeyword: searchCondition.searchKeyword,
       searchType: searchCondition.searchType,
-      isVisible: searchCondition.isVisible ? 'true' : 'false'
+      isVisible: searchCondition.isVisible ? 'true' : 'false',
     }
   });
 };
