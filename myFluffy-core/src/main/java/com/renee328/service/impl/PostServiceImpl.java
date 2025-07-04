@@ -7,6 +7,7 @@ import com.renee328.mapper.PostImageMapper;
 import com.renee328.mapper.PostMapper;
 import com.renee328.mapper.PostTagMapper;
 import com.renee328.mapper.TagMapper;
+import com.renee328.service.FileService;
 import com.renee328.service.PostService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,12 +22,14 @@ public class PostServiceImpl implements PostService {
     private final TagMapper tagMapper;
     private final PostTagMapper postTagMapper;
     private final PostImageMapper postImageMapper;
+    private final FileService fileService;
 
-    public PostServiceImpl(PostMapper postMapper, TagMapper tagMapper, PostTagMapper postTagMapper, PostImageMapper postImageMapper) {
+    public PostServiceImpl(PostMapper postMapper, TagMapper tagMapper, PostTagMapper postTagMapper, PostImageMapper postImageMapper, FileService fileService) {
         this.postMapper = postMapper;
         this.tagMapper = tagMapper;
         this.postTagMapper = postTagMapper;
         this.postImageMapper = postImageMapper;
+        this.fileService = fileService;
     }
 
     // 게시글 목록 조회하기 (필터, 검색, 정렬 조건 적용)
@@ -68,6 +71,8 @@ public class PostServiceImpl implements PostService {
                 postImageMapper.insertPostImage(postImageDto);
             }
         }
+
+        fileService.cleanupUnusedImages(postDto.getPostId(), postDto.getContent());
     }
 
     // 게시글 세부내용 조회하기
@@ -95,6 +100,7 @@ public class PostServiceImpl implements PostService {
         setPostCategoryString(postDto);
         postMapper.updatePost(postDto);
         postTagMapper.deleteByPostId(postDto.getPostId());
+        fileService.cleanupUnusedImages(postDto.getPostId(), postDto.getContent());
         postImageMapper.deletePostImagesByPostId(postDto.getPostId());
         insertTag(postDto);
 
@@ -117,6 +123,12 @@ public class PostServiceImpl implements PostService {
     @Transactional
     @Override
     public void deletePost(Long postId, String deleterId, String postTitle) {
+        // 삭제 전 이미지 정리
+        String content = getPostContentById(postId);
+        if (content != null) {
+            fileService.cleanupUnusedImages(postId, content);
+        }
+
         postMapper.logPostDeletion(deleterId, postTitle);
         postTagMapper.deleteByPostId(postId);
         postImageMapper.deletePostImagesByPostId(postId);

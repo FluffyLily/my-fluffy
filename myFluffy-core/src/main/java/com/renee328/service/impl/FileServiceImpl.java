@@ -1,5 +1,6 @@
 package com.renee328.service.impl;
 
+import com.renee328.mapper.PostImageMapper;
 import com.renee328.service.FileService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -23,6 +25,12 @@ public class FileServiceImpl implements FileService {
 
     @Value("${file.upload.base-url}")
     private String baseUrl;
+
+    private final PostImageMapper postImageMapper;
+
+    public FileServiceImpl (PostImageMapper postImageMapper) {
+        this.postImageMapper = postImageMapper;
+    }
 
     @Override
     @Transactional
@@ -60,36 +68,30 @@ public class FileServiceImpl implements FileService {
 
     @Override
     @Transactional
-    public void cleanupUnusedImages(String contentHtml) {
+    public void cleanupUnusedImages(Long postId, String contentHtml) {
         if (contentHtml == null) return;
 
-        // HTML에서 사용된 이미지 경로 추출
-        Set<String> usedImageFilenames = new HashSet<>();
-        Set<String> datePathsToCheck = new HashSet<>();
-
+        // 본문에서 추출된 이미지 경로
+        Set<String> usedImagePaths = new HashSet<>();
         Matcher matcher = Pattern.compile("/uploads/images/(\\d{4}/\\d{2}/\\d{2})/([^\"'>]+)").matcher(contentHtml);
         while (matcher.find()) {
             String datePath = matcher.group(1);
             String filename = matcher.group(2);
-            usedImageFilenames.add(datePath + "/" + filename);
-            datePathsToCheck.add(datePath);
+            usedImagePaths.add(datePath + "/" + filename);
         }
 
-        for (String datePath : datePathsToCheck) {
-            String imageDirPath = baseDir + "/" + datePath;
-            File imageDir = new File(imageDirPath);
+        // 해당 게시글에 저장된 이미지 경로 데이터베이스에서 가져오기 - 동일한 날짜의 다른 게시글 이미지 삭제 방지
+        List<String> dbImagePaths = postImageMapper.getImageUrlsByPostId(postId); // 경로 예: uploads/images/2025/07/03/xxx.jpg
 
-            if (imageDir.exists() && imageDir.isDirectory()) {
-                File[] files = imageDir.listFiles();
-                if (files != null) {
-                    for (File file : files) {
-                        String relativePath = datePath + "/" + file.getName();
-                        if (!usedImageFilenames.contains(relativePath)) {
-                            boolean deleted = file.delete(); // 본문에 포함되지 않은 이미지 삭제
-                            if (deleted) {
-                                System.out.println("[IMAGE CLEANUP] deleted file: " + file.getPath());
-                            }
-                        }
+        for (String fullPath : dbImagePaths) {
+            String relativePath = fullPath.replaceFirst("^/uploads/images/", "");
+            if (!usedImagePaths.contains(relativePath)) {
+                File file = new File(baseDir + "/" + relativePath);
+                System.out.println(">>> trying to delete file: " + file.getAbsolutePath());
+                if (file.exists()) {
+                    boolean deleted = file.delete();
+                    if (deleted) {
+                        System.out.println("[IMAGE CLEANUP] deleted unused image: " + file.getPath());
                     }
                 }
             }

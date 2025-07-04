@@ -1,6 +1,7 @@
 package com.renee328.admin.config;
 
 import com.renee328.interceptor.CacheControlInterceptor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -10,6 +11,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private final CacheControlInterceptor cacheControlInterceptor;
+
+    @Value("${file.upload.base-dir}")
+    private String baseDir;
 
     public WebConfig(CacheControlInterceptor cacheControlInterceptor) {
         this.cacheControlInterceptor = cacheControlInterceptor;
@@ -24,6 +28,6 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/uploads/images/**")
-                .addResourceLocations("file:/Users/inhye/Desktop/myFluffy-uploads/");
+                .addResourceLocations("file:" + baseDir + "/");
     }
 }

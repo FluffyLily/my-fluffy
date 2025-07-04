@@ -4,5 +4,5 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface FileService {
     String saveImage(MultipartFile file);
-    void cleanupUnusedImages(String contentHtml);
+    void cleanupUnusedImages(Long postId, String contentHtml);
 }

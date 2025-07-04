@@ -61,7 +61,6 @@ public class PostController {
     @PostMapping("/write")
     public ResponseEntity<?> writePost(@RequestBody PostDto postDto) {
         postService.writePost(postDto);
-        fileService.cleanupUnusedImages(postDto.getContent());
         return ResponseEntity.ok(Map.of("message", "게시글이 작성되었습니다."));
     }
 
@@ -83,18 +82,12 @@ public class PostController {
     @PutMapping("/update/{postId}")
     public ResponseEntity<?> updatePost(@RequestBody PostDto postDto) {
         postService.updatePost(postDto);
-        fileService.cleanupUnusedImages(postDto.getContent());
         return ResponseEntity.ok(Map.of("message", "게시글이 업데이트되었습니다."));
     }
 
     // 게시글 삭제하기
     @DeleteMapping("/delete/{postId}")
     public ResponseEntity<?> deletePost(@PathVariable Long postId, @RequestParam String deleterId, @RequestParam String postTitle) {
-        // 삭제 전 이미지 정리
-        String content = postService.getPostContentById(postId);
-        if (content != null) {
-            fileService.cleanupUnusedImages(content);
-        }
         postService.deletePost(postId, deleterId, postTitle);
         return ResponseEntity.ok(Map.of("message", "게시글이 삭제되었습니다."));
     }

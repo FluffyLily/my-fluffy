@@ -465,7 +465,6 @@ const writePost = async () => {
     newPost.images = currentImages.map(url => ({ imageUrl: url }));
   }
 
-  console.log('현재 content:', newPost.content);
   if (props.postId) {
     if (!confirm("게시글을 수정하시겠습니까?")) return;
     try {

@@ -38,7 +38,7 @@ public class SecurityConfig {
                                 .requestMatchers(
                                         "/", "/index.html", "/api/auth/**",
                                         "/error", "/assets/**", "/vite.svg",
-                                        "my-fluffy.png", "/uploads/**", "/ckeditor5-custom/**"
+                                        "/my-fluffy.png", "/uploads/**", "/ckeditor5-custom/**"
                                 ).permitAll()
                                 .anyRequest().authenticated()
                 )
