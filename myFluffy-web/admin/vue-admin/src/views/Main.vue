@@ -116,9 +116,9 @@ const chartLabels = computed(() => weeklyPostData.value.labels)
 const chartCounts = computed(() => weeklyPostData.value.counts)
 const fetchWeeklyPostStats = async () => {
   try {
-    const res = await apiClient.get('/post/weekly-count')
-    weeklyPostData.value.labels = res.data.map(item => item.postDate)
-    weeklyPostData.value.counts = res.data.map(item => item.count)
+    const response = await apiClient.get('/post/weekly-count')
+    weeklyPostData.value.labels = response.data.map(item => item.postDate)
+    weeklyPostData.value.counts = response.data.map(item => item.count)
   } catch (e) {
     console.error('주간 게시글 통계 조회 실패:', e)
   }
