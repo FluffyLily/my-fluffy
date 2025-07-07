@@ -37,8 +37,8 @@ public class SecurityConfig {
                         authorizeRequests
                                 .requestMatchers(
                                         "/", "/index.html", "/api/auth/**",
-                                        "/error", "/assets/**", "/vite.svg",
-                                        "/my-fluffy.png", "/uploads/**", "/ckeditor5-custom/**"
+                                        "/error", "/assets/**", "/favicon.png",
+                                        "/uploads/**", "/ckeditor5-custom/**"
                                 ).permitAll()
                                 .anyRequest().authenticated()
                 )

@@ -44,13 +44,13 @@ apiClient.interceptors.response.use(
     if (error.response) {
       const status = error.response.status;
 
-      // ✅ 로그인 요청에서 401이 발생한 경우 refresh 요청을 보내지 않음
+      // 로그인 요청에서 401이 발생한 경우 refresh 요청을 보내지 않음
       if (status === 401 && originalRequest.url === "/auth/login") {
-        console.log("❌ 로그인 실패 - 잘못된 아이디 또는 비밀번호");
+        console.log("로그인 실패 - 잘못된 아이디 또는 비밀번호");
         return Promise.reject(error); // 그대로 에러 반환
       }
       
-      // ✅ 그 외 401 발생 시 (Access Token 만료), refresh 시도
+      // 그 외 401 발생 시 (Access Token 만료), refresh 시도
       if (status === 401) {  // 인증 오류 발생 시 (Access Token 만료)
         try {
           const refreshResponse = await apiClient.post(
