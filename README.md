@@ -1,11 +1,11 @@
-# 🐾 My Fluffy (마이 플러피)
+# My Fluffy (마이 플러피)
 
 `My Fluffy`는 반려생활 커뮤니티 기반의 블로그형 웹사이트입니다.  
 관리자 시스템 모듈과 사용자 프론트 모듈이 분리되어 있으며, Spring Boot와 Vue 3 기반으로 구성되어 있습니다.
 
 ---
 
-## 📁 프로젝트 구조
+## 프로젝트 구조
 
 ```
 myFluffy/
@@ -23,9 +23,9 @@ myFluffy/
 
 ---
 
-## 🛠️ 기술 스택
+## 기술 스택
 
-### 🔹 Backend
+### Backend
 - Java 17
 - Spring Boot 3.4.0
 - MyBatis
@@ -33,7 +33,7 @@ myFluffy/
 - Redis
 - Maven (멀티모듈 구조)
 
-### 🔹 Frontend
+### Frontend
 - Vue 3 + Vite
 - Pinia
 - SCSS + Bootstrap 5
@@ -41,7 +41,7 @@ myFluffy/
 
 ---
 
-## ⚙️ 실행 방법
+## 실행 방법
 
 각 모듈별 README 참고:
 
@@ -50,7 +50,7 @@ myFluffy/
 
 ---
 
-## 🔒 주의 사항
+## 주의 사항
 
 - `application-*.yml` 설정 파일은 Git에 포함되지 않습니다.  
   각 모듈 내의 `application-*-example.yml`을 복사해서 실제 세부 설정을 수정해서 사용하세요.
@@ -63,7 +63,7 @@ myFluffy/
 
 ---
 
-## 📌 TODO
+## TODO
 
 - [ ] 사용자 프론트(front) 개발 시작
 - [ ] OAuth 로그인 연동 (Google, Kakao)
