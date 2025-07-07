@@ -31,8 +31,9 @@ myFluffy 프로젝트의 관리자 시스템 모듈입니다. 게시판 관리, 
 
 ## 폴더 구조
 
+### 프론트엔드 (Vue 기반 관리자 UI)
 ```
-admin/
+vue-admin/
 ├── public/             # 정적 리소스
 ├── src/
 │   ├── api/            # Axios 기반 API 모듈
@@ -46,6 +47,16 @@ admin/
 │   └── main.js         # 애플리케이션 초기화 및 App.vue 마운트 진입점
 ├── index.html          # 앱 진입점
 └── vite.config.js      # Vite 설정
+```
+
+### 백엔드 (Spring Boot 기반 관리자 API)
+```
+src/main/
+├── java/
+│   └── com/renee328/admin/...        # 관리자 API 컨트롤러, 서비스, 설정, 필터 등
+├── resources/
+│   ├── static/                       # 빌드된 Vue 정적 리소스가 복사되어 배포되는 위치
+│   └── application-admin-prod.yml    # Spring Boot 설정 파일
 ```
 
 ## 개발 환경 실행
