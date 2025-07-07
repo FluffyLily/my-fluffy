@@ -1,3 +1,27 @@
+<template>
+  <div class="login-container ">
+    <div class="login-card p-4 rounded shadow-lg">
+      <h2 class="text-center mb-4">관리자 로그인</h2>
+      <form @submit.prevent="login">
+        <div class="mb-3">
+          <label for="username" class="form-label">관리자 아이디</label>
+          <input v-model="username" type="text" id="username" class="form-control" placeholder="아이디 입력" />
+        </div>
+        <div class="mb-3">
+          <label for="password" class="form-label">비밀번호</label>
+          <input v-model="password" type="password" id="password" class="form-control" placeholder="비밀번호 입력" />
+        </div>
+        <p v-if="errorMessage" class="text-danger text-center">{{ errorMessage }}</p>
+        <!-- 로딩 상태에 따라 버튼 텍스트나 로딩 표시 -->
+        <button type="submit" class="btn btn-primary w-100" :disabled="isLoading">
+          <span v-if="isLoading" class="spinner-border-custom" role="status" aria-hidden="true"></span>
+          {{ isLoading ? '로딩중...' : '로그인' }}
+        </button>
+      </form>
+    </div>
+  </div>
+</template>
+
 <script setup>
 import { ref, watch, nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -77,30 +101,6 @@ onMounted(() => {
   }
 });
 </script>
-
-<template>
-  <div class="login-container ">
-    <div class="login-card p-4 rounded shadow-lg">
-      <h2 class="text-center mb-4">관리자 로그인</h2>
-      <form @submit.prevent="login">
-        <div class="mb-3">
-          <label for="username" class="form-label">관리자 아이디</label>
-          <input v-model="username" type="text" id="username" class="form-control" placeholder="아이디 입력" />
-        </div>
-        <div class="mb-3">
-          <label for="password" class="form-label">비밀번호</label>
-          <input v-model="password" type="password" id="password" class="form-control" placeholder="비밀번호 입력" />
-        </div>
-        <p v-if="errorMessage" class="text-danger text-center">{{ errorMessage }}</p>
-        <!-- 로딩 상태에 따라 버튼 텍스트나 로딩 표시 -->
-        <button type="submit" class="btn btn-primary w-100" :disabled="isLoading">
-          <span v-if="isLoading" class="spinner-border-custom" role="status" aria-hidden="true"></span>
-          {{ isLoading ? '로딩중...' : '로그인' }}
-        </button>
-      </form>
-    </div>
-  </div>
-</template>
 
 <style lang="scss" scoped>
 

@@ -217,6 +217,7 @@ const resetSearch = () => {
   searchCondition.isVisible = false;
   searchCondition.sort = 'recent';
   searchCondition.offset = 0;
+  focusedId.value = null;
   fetchPosts();
 };
 
