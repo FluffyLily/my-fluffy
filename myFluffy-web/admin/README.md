@@ -61,13 +61,13 @@ vue-admin/
 
 ## 실행 방법
 
-[vue-admin](./myFluffy-web/admin/vue-admin) README 참고:
+[vue-admin](/vue-admin) README 참고:
 
-- [myFluffy-web/admin/vue-admin](./myFluffy-web/admin/vue-admin/README.md)
+- [myFluffy-web/admin/vue-admin](/vue-admin/README.md)
 
 
 ## 개발 환경 실행
-
+정
 ```bash
 npm install
 npm run dev
