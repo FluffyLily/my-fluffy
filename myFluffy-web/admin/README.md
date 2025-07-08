@@ -59,6 +59,13 @@ vue-admin/
 └── vite.config.js      # Vite 설정
 ```
 
+## 실행 방법
+
+[vue-admin](./myFluffy-web/admin/vue-admin) README 참고:
+
+- [myFluffy-web/admin/vue-admin](./myFluffy-web/admin/vue-admin/README.md)
+
+
 ## 개발 환경 실행
 
 ```bash
