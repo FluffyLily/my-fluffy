@@ -59,7 +59,7 @@ vue-admin/
 └── vite.config.js      # Vite 설정
 ```
 
-## 실행 방법
+## vue-admin 보러 가기
 
 [vue-admin](./vue-admin) README 참고:
 
@@ -67,7 +67,7 @@ vue-admin/
 
 
 ## 개발 환경 실행
-정
+
 ```bash
 npm install
 npm run dev
