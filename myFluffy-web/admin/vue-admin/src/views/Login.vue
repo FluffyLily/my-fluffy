@@ -2,7 +2,7 @@
   <div class="login-container ">
     <div class="login-card p-4 rounded shadow-lg">
       <h2 class="text-center mb-4">관리자 로그인</h2>
-      <form @submit.prevent="login">
+      <form @submit.prevent="handleLogin">
         <div class="mb-3">
           <label for="username" class="form-label">관리자 아이디</label>
           <input v-model="username" type="text" id="username" class="form-control" placeholder="아이디 입력" />
@@ -39,6 +39,14 @@ const authStore = useAuthStore();
 watch(() => authStore.accessToken, (newToken) => {
 });
 
+const handleLogin = async () => {
+  const success = await login();
+  if (success) {
+    await nextTick();
+    router.push("/main");
+  }
+};
+
 const login = async () => {
   isLoading.value = true;
   try {
@@ -53,7 +61,7 @@ const login = async () => {
       authStore.setAccessToken(accessToken);
       apiClient.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
 
-      // 토큰에서 userId 추출 후 저장
+      // 토큰에서 사용자 정보 추출 후 store에 저장
       const decodedToken = jwtDecode(accessToken);
       const userId = decodedToken.userId; 
       const loginId = decodedToken.sub;
@@ -61,10 +69,7 @@ const login = async () => {
       authStore.setUserId(userId);
       authStore.setLoginId(loginId);
       authStore.setRoleId(roleId);
-
-      nextTick(() => {
-        router.push("/main");
-      });
+      return true;
       
     } else {
       throw new Error("Access Token이 제공되지 않았습니다.");
@@ -72,32 +77,35 @@ const login = async () => {
   } catch (error) {
     console.error("로그인 요청 에러:", error);
     console.error("에러 응답 데이터:", error.response?.data); 
-    
-    if (error.response?.status === 403) {
-      authStore.clearAccessToken();
-      errorMessage.value = "비활성화된 계정입니다. 다른 관리자에게 문의하세요."
 
+    if (error.response?.status === 403) {
+      errorMessage.value = "비활성화된 계정입니다. 다른 관리자에게 문의하세요.";
     } else if (error.response?.status === 401) {
-      authStore.clearAccessToken();
-      errorMessage.value = "아이디 또는 비밀번호가 일치하지 않습니다."
+      errorMessage.value = "아이디 또는 비밀번호가 일치하지 않습니다.";
+    } else {
+      errorMessage.value = "로그인 중 오류가 발생했습니다.";
     }
+
+    authStore.clearAccessToken();
+    return false;
+    
   } finally {
     isLoading.value = false;
   }
 };
 
-onMounted(() => {
+onMounted(async() => {
   const params = new URLSearchParams(window.location.search);
   const demo = params.get('demo');
 
   if (demo === 'admin') {
     username.value = 'demo-admin';
     password.value = '1234qwer!';
-    login();
+    await handleLogin();
   } else if (demo === 'manager') {
     username.value = 'demo-manager';
     password.value = '1234qwer!';
-    login();
+    await handleLogin();
   }
 });
 </script>

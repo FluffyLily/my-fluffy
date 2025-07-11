@@ -111,7 +111,7 @@ router.beforeEach((to, from, next) => {
   if (tokenExpiry && currentTime > tokenExpiry) {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("tokenExpiry");
-    authStore.accessToken = null;
+    authStore.clearAccessToken();
     if (requiresAuth) {
       return next("/"); // 인증 필요한 페이지라면 로그인 페이지로 리다이렉트
     }

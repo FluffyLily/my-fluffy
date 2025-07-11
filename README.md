@@ -63,6 +63,14 @@ myFluffy/
 
 ---
 
+## 프로젝트 기술 문서 (Notion 정리본)
+
+아래의 노션 링크에서 프로젝트의 상세 기능 및 구현 설명을 읽을 수 있습니다.
+
+- [My Fluffy 프로젝트 전체 문서 보기](https://renee328.notion.site/My-Fluffy-1b7b4fd9824d804ba7e0c8502b560591?source=copy_link)
+
+---
+
 ## TODO
 
 - [ ] 사용자 프론트(front) 개발 시작
