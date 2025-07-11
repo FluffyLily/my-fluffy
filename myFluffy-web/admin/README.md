@@ -93,7 +93,7 @@ VITE_API_BASE_URL=http://localhost:8081/api
 VITE_API_BASE_URL=https://cms.myfluffy.site
 ```
 
-운영 환경(admin-prod)은 Spring Boot 운영 서버에서 HTTPS로 정적 파일과 API를 하나의 애플리케이션에서 서빙하는 구조입니다.
+운영 환경(admin-prod)은 Spring Boot 운영 서버에서 HTTPS로 정적 리소스와 API를 하나의 애플리케이션에서 서빙하는 구조입니다.
 
 ## 주요 기능
 
