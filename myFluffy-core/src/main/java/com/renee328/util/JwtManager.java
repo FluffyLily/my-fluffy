@@ -3,6 +3,8 @@ package com.renee328.util;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -12,7 +14,7 @@ import java.util.Date;
 public class JwtManager {
     @Value("${security.jwt.secret-key}")
     private String SECRET_KEY;
-
+    private static final Logger log = LoggerFactory.getLogger(JwtManager.class);
     public String createToken(String loginId, long expirationTime, String role, Long userId, String userName) {
         return Jwts.builder()
                 .subject(loginId)
@@ -37,10 +39,10 @@ public class JwtManager {
         try {
             return getClaims(token).getExpiration().after(new Date());
         } catch (ExpiredJwtException e) {
-            System.out.println(">> JWT 만료됨: " + e.getMessage());
+            log.info(">> JWT 만료됨: " + e.getMessage());
             return false;
         } catch (JwtException | IllegalArgumentException e) {
-            System.out.println(">> JWT 유효성 검증 실패: " + e.getMessage());
+            log.warn(">> JWT 유효성 검증 실패: " + e.getMessage());
             return false;
         }
     }

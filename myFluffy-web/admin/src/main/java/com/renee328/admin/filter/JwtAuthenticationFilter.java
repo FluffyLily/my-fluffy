@@ -3,9 +3,10 @@ package com.renee328.admin.filter;
 import com.renee328.admin.service.JwtTokenService;
 import com.renee328.admin.security.UserDetailsServiceImpl;
 import com.renee328.admin.security.CustomUserDetails;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,11 +15,11 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import java.io.IOException;
 
-@Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenService jwtTokenService;
     private final UserDetailsServiceImpl userDetailsService;
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     public JwtAuthenticationFilter(JwtTokenService jwtTokenService, UserDetailsServiceImpl userDetailsService) {
         this.jwtTokenService = jwtTokenService;
@@ -29,7 +30,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
+        String ip = request.getRemoteAddr();
+        String agent = request.getHeader("User-Agent");
         String path = request.getRequestURI();
+
+        log.info("접속 로그 - IP: {}, Agent: {}, Path: {}", ip, agent, path);
+
         if (path.startsWith("/api/auth/login") || path.startsWith("/api/auth/refresh")
                 || path.startsWith("/assets/") || path.startsWith("/uploads/") || path.equals("/index.html")) {
             chain.doFilter(request, response);
@@ -64,7 +70,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
-        System.out.println("JwtAuthenticationFilter [bearerToken] : " + bearerToken);
+        log.info("JwtAuthenticationFilter [bearerToken] : " + bearerToken);
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }

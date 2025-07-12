@@ -34,8 +34,14 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, ClientRegistrationRepository clientRegistrationRepository) throws Exception {
-        System.out.println(">> SecurityFilterChain 등록됨");
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtManager jwtManager) {
+        return new JwtAuthenticationFilter(jwtManager);
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtAuthenticationFilter jwtAuthenticationFilter,
+                                                   ClientRegistrationRepository clientRegistrationRepository) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -53,7 +59,7 @@ public class SecurityConfig {
                         )
                         .defaultSuccessUrl("/api/auth/oauth/success", true)
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtManager), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .logout(logout -> logout
                     .logoutSuccessUrl("/")
                     .invalidateHttpSession(true)

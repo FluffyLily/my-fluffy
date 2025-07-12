@@ -1,9 +1,14 @@
 package com.renee328.admin.util;
 
+import com.renee328.service.impl.FileServiceImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 public class PasswordUtil {
     private static final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    private static final Logger log = LoggerFactory.getLogger(PasswordUtil.class);
+
 
     /**
      * 비밀번호를 BCrypt 알고리즘으로 암호화합니다.
@@ -28,7 +33,7 @@ public class PasswordUtil {
         String rawPassword = "1234qwer!";
         String hashedPassword = encryptPassword(rawPassword);
 
-        System.out.println("암호화된 비밀번호: " + hashedPassword);
-        System.out.println("비밀번호 검증 결과: " + verifyPassword(rawPassword, hashedPassword));
+        log.info("암호화된 비밀번호: " + hashedPassword);
+        log.info("비밀번호 검증 결과: " + verifyPassword(rawPassword, hashedPassword));
     }
 }

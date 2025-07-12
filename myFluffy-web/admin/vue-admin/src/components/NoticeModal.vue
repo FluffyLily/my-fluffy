@@ -1,41 +1,41 @@
 <template>
-    <div v-if="show" class="modal-overlay">
-      <div class="modal-content modal-content-details">
-        <div class="modal-header">
-          <h2 class="modal-title">공지 내용</h2>
-          <button class="btn-close" @click="closeModal"></button>
-        </div>
-        <div class="modal-body details-view">
-          <div class="modal-field">
-            <h3>{{ notice.title }}</h3>
-            <p class="notice-content">{{ notice.content }}</p>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="cancel-btn" @click="closeModal">닫기</button>
+  <div v-if="show" class="modal-overlay">
+    <div class="modal-content modal-content-details">
+      <div class="modal-header">
+        <h2 class="modal-title">공지 내용</h2>
+        <button class="btn-close" @click="closeModal"></button>
+      </div>
+      <div class="modal-body details-view">
+        <div class="modal-field">
+          <h3>{{ notice.title }}</h3>
+          <p class="notice-content">{{ notice.content }}</p>
         </div>
       </div>
+      <div class="modal-footer">
+        <button class="cancel-btn" @click="closeModal">닫기</button>
+      </div>
     </div>
-  </template>
-  
-  <script setup>
-  
-  const props = defineProps({
-    show: Boolean,
-    notice: {
-      type: Object,
-      default: () => ({ title: '', content: '' })
-    }
-  });
-  
-  const emits = defineEmits(['close']);
-  
-  const closeModal = () => {
-    emits('close');
-  };
-  </script>
-  
-  <style scoped lang="scss">
+  </div>
+</template>
+
+<script setup>
+
+const props = defineProps({
+  show: Boolean,
+  notice: {
+    type: Object,
+    default: () => ({ title: '', content: '' })
+  }
+});
+
+const emits = defineEmits(['close']);
+
+const closeModal = () => {
+  emits('close');
+};
+</script>
+
+<style scoped lang="scss">
 // 모달 스타일
 .modal-overlay {
   position: fixed;
@@ -178,4 +178,4 @@
   overflow-y: auto;
   text-align: left;
 }
-  </style>
+</style>

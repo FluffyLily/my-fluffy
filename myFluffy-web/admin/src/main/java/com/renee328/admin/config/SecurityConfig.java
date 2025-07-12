@@ -1,9 +1,9 @@
 package com.renee328.admin.config;
 
+import com.renee328.admin.filter.BlockMaliciousRequestFilter;
 import com.renee328.admin.filter.JwtAuthenticationFilter;
-import com.renee328.admin.service.JwtTokenService;
 import com.renee328.admin.security.UserDetailsServiceImpl;
-import jakarta.annotation.PostConstruct;
+import com.renee328.admin.service.JwtTokenService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,7 +31,20 @@ public class SecurityConfig {
     private String allowedOrigin;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtTokenService jwtTokenService, UserDetailsServiceImpl userDetailsService) throws Exception {
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenService jwtTokenService,
+                                                           UserDetailsServiceImpl userDetailsService) {
+        return new JwtAuthenticationFilter(jwtTokenService, userDetailsService);
+    }
+
+    @Bean
+    public BlockMaliciousRequestFilter blockMaliciousRequestFilter() {
+        return new BlockMaliciousRequestFilter();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtAuthenticationFilter jwtAuthenticationFilter,
+                                                   BlockMaliciousRequestFilter blockMaliciousRequestFilter) throws Exception {
         http
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
@@ -47,7 +60,8 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenService, userDetailsService), UsernamePasswordAuthenticationFilter.class) // ✅ JWT 필터 추가
+                .addFilterBefore(blockMaliciousRequestFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(form -> form
                         .loginPage("/auth") // 로그인 페이지 경로
                         .disable() // 기본 로그인 페이지 비활성화
@@ -63,7 +77,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigin)); // Vue.js 클라이언트 허용
+        configuration.setAllowedOrigins(List.of(allowedOrigin));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

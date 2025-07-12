@@ -2,6 +2,8 @@ package com.renee328.service.impl;
 
 import com.renee328.mapper.PostImageMapper;
 import com.renee328.service.FileService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ public class FileServiceImpl implements FileService {
     private String baseUrl;
 
     private final PostImageMapper postImageMapper;
+    private static final Logger log = LoggerFactory.getLogger(FileServiceImpl.class);
 
     public FileServiceImpl (PostImageMapper postImageMapper) {
         this.postImageMapper = postImageMapper;
@@ -87,11 +90,13 @@ public class FileServiceImpl implements FileService {
             String relativePath = fullPath.replaceFirst("^/uploads/images/", "");
             if (!usedImagePaths.contains(relativePath)) {
                 File file = new File(baseDir + "/" + relativePath);
-                System.out.println(">>> trying to delete file: " + file.getAbsolutePath());
+                log.info("[IMAGE CLEANUP] 삭제하려는 이미지 파일 서버 경로 : {}", file.getAbsolutePath());
                 if (file.exists()) {
                     boolean deleted = file.delete();
                     if (deleted) {
-                        System.out.println("[IMAGE CLEANUP] deleted unused image: " + file.getPath());
+                        log.info("[IMAGE CLEANUP] 사용하지 않는 이미지 삭제 성공: {}", file.getPath());
+                    } else {
+                        log.warn("[IMAGE CLEANUP] 사용하지 않는 이미지 삭제 실패: {}", file.getPath());
                     }
                 }
             }

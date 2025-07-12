@@ -12,7 +12,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ import java.util.Map;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtManager jwtManager;
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     public JwtAuthenticationFilter(JwtManager jwtManager) {
         this.jwtManager = jwtManager;
@@ -35,7 +37,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = extractTokenFromCookie(request);
 
         if (StringUtils.hasText(token) && jwtManager.validateToken(token)) {
-            System.out.println("[JwtFilter] 토큰 유효함");
+            log.info("[JwtFilter] 토큰 유효함");
             Claims claims = jwtManager.getClaims(token);
             String loginId = claims.getSubject();
             String role = claims.get("role", String.class);
@@ -51,7 +53,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } else {
-            System.out.println("[JwtFilter] 토큰이 비었거나 유효하지 않음");
+            log.info("[JwtFilter] 토큰이 비었거나 유효하지 않음");
         }
 
         filterChain.doFilter(request, response);
