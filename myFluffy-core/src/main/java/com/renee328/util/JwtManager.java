@@ -39,10 +39,10 @@ public class JwtManager {
         try {
             return getClaims(token).getExpiration().after(new Date());
         } catch (ExpiredJwtException e) {
-            log.info(">> JWT 만료됨: " + e.getMessage());
+            log.debug(">> JWT 만료됨: " + e.getMessage());
             return false;
         } catch (JwtException | IllegalArgumentException e) {
-            log.warn(">> JWT 유효성 검증 실패: " + e.getMessage());
+            log.debug(">> JWT 유효성 검증 실패: " + e.getMessage());
             return false;
         }
     }

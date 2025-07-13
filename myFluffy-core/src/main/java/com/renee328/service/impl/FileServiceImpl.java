@@ -90,13 +90,13 @@ public class FileServiceImpl implements FileService {
             String relativePath = fullPath.replaceFirst("^/uploads/images/", "");
             if (!usedImagePaths.contains(relativePath)) {
                 File file = new File(baseDir + "/" + relativePath);
-                log.info("[IMAGE CLEANUP] 삭제하려는 이미지 파일 서버 경로 : {}", file.getAbsolutePath());
+                log.debug("[IMAGE CLEANUP] 삭제하려는 이미지 파일 서버 경로 : {}", file.getAbsolutePath());
                 if (file.exists()) {
                     boolean deleted = file.delete();
                     if (deleted) {
-                        log.info("[IMAGE CLEANUP] 사용하지 않는 이미지 삭제 성공: {}", file.getPath());
+                        log.debug("[IMAGE CLEANUP] 사용하지 않는 이미지 삭제 성공: {}", file.getPath());
                     } else {
-                        log.warn("[IMAGE CLEANUP] 사용하지 않는 이미지 삭제 실패: {}", file.getPath());
+                        log.debug("[IMAGE CLEANUP] 사용하지 않는 이미지 삭제 실패: {}", file.getPath());
                     }
                 }
             }
