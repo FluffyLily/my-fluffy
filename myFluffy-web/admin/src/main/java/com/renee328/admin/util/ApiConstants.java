@@ -1,6 +1,6 @@
 package com.renee328.admin.util;
 
-public class Constants {
+public class ApiConstants {
     public static final String AUTH_API_URL= "/api/auth";
     public static final String ADMIN_API_URL = "/api/admin";
     public static final String BOARD_API_URL = "/api/board";

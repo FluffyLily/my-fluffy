@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.renee328.admin.util.Constants.NOTICE_API_URL;
+import static com.renee328.admin.util.ApiConstants.NOTICE_API_URL;
 
 @RestController
 @RequestMapping(NOTICE_API_URL)

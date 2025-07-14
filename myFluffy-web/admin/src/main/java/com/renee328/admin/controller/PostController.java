@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.renee328.admin.util.Constants.POST_API_URL;
+import static com.renee328.admin.util.ApiConstants.POST_API_URL;
 
 @RestController
 @RequestMapping(POST_API_URL)

@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.renee328.admin.util.Constants.USER_API_URL;
+import static com.renee328.admin.util.ApiConstants.USER_API_URL;
 
 @RestController
 @RequestMapping(USER_API_URL)

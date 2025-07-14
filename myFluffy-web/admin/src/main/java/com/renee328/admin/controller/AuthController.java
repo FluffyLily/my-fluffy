@@ -18,7 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Arrays;
 import java.util.Map;
 
-import static com.renee328.admin.util.Constants.AUTH_API_URL;
+import static com.renee328.admin.util.ApiConstants.AUTH_API_URL;
 
 @RestController
 @RequestMapping(AUTH_API_URL)

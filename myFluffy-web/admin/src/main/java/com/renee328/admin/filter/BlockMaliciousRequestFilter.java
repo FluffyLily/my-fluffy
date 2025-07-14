@@ -10,23 +10,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
-import java.util.List;
+import static com.renee328.admin.util.FilterConstants.*;
 
 public class BlockMaliciousRequestFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(BlockMaliciousRequestFilter.class);
-    private static final List<String> blockedUriPatterns = List.of(
-            "/.git", ".env", "/php", "/HNAP1", "/shell", "/wp-", "/actuator", "/cgi-bin"
-    );
-
-    private static final List<String> blockedUserAgents = List.of(
-            "python", "python-requests", "pythonrequests", "curl", "httpclient", "go-http-client", "wget", "bot",
-            "scanner", "nmap", "censys", "internet-measurement", "internetmeasurement", "censysinspect", "zgrab", "masscan"
-    );
-
-    private static final List<String> allowedPrefixes = List.of(
-            "/", "/api", "/assets", "/ckeditor5-custom", "/uploads"
-    );
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -38,7 +26,7 @@ public class BlockMaliciousRequestFilter extends OncePerRequestFilter {
         String ip = request.getRemoteAddr();
 
         // 차단할 URI 포함 여부
-        for (String pattern : blockedUriPatterns) {
+        for (String pattern : BLOCKED_URI_PATTERNS) {
             if (uri.toLowerCase().contains(pattern)) {
                 log.warn("[허용되지 않는 URI 패턴 경로로 접근] IP: {}, URI: {}, 패턴: {}", ip, uri, pattern);
                 response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 허용되지 않는 URI 패턴 경로로 접근함.");
@@ -60,26 +48,59 @@ public class BlockMaliciousRequestFilter extends OncePerRequestFilter {
             return;
         }
 
+        // 단일 경로 허용
+        if (ALLOWED_EXACT_PATHS.contains(uri)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // 허용된 경로 접두사만 통과
-        boolean allowed = allowedPrefixes.stream().anyMatch(uri::startsWith);
+        boolean allowed = ALLOWED_PREFIXES.stream().anyMatch(uri::startsWith);
         if (!allowed) {
             log.warn("[허용되지 않은 접두사로 시작하는 경로로 접근] IP: {}, URI: {}", ip, uri);
             response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 허용되지 않은 접두사로 시작하는 경로로 접근함.");
             return;
         }
 
+        // 의심스러운 파일 확장자 접근 차단
+        if (uri.endsWith(".php") || uri.endsWith(".env") || uri.endsWith(".bak")) {
+            log.warn("[의심스러운 파일 확장자 접근] IP: {}, URI: {}", ip, uri);
+            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 의심스러운 파일 요청.");
+            return;
+        }
+
+        // 의심스러운 JS 리소스 요청 차단
+        if (uri.matches("^/(jquery|bootstrap|config|env|main).*\\.js$")) {
+            log.warn("[의심스러운 JS 리소스 요청 탐지] IP: {}, URI: {}", ip, uri);
+            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 존재하지 않는 정적 리소스 요청");
+            return;
+        }
+
         // 비정상 User-Agent 차단
         if (userAgent != null) {
             String ua = userAgent.toLowerCase();
-            for (String badUserAgent : blockedUserAgents) {
+
+            // 전역 User-Agent 필터링
+            for (String badUserAgent : BLOCKED_USER_AGENTS) {
                 if (ua.contains(badUserAgent)) {
                     log.warn("[비정상적인 User-Agent 접근] IP: {}, UA: {}, URI: {}", ip, userAgent, uri);
-                    response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 비정상적인 User-Agent 접근함.");
+                    response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 비정상적인 User-Agent.");
                     return;
                 }
             }
-        }
 
+            // 정적 리소스 접근 시 UA 추가 필터링
+            if ((uri.startsWith("/assets") || uri.startsWith("/ckeditor5-custom"))) {
+                for (String badUserAgent : BLOCKED_USER_AGENTS) {
+                    if (ua.contains(badUserAgent)) {
+                        log.warn("[정적 리소스에 비정상 UA 접근 차단] IP: {}, UA: {}, URI: {}", ip, userAgent, uri);
+                        response.setStatus(HttpStatus.NOT_ACCEPTABLE.value()); // 406
+                        response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 비정상 UA로 정적 리소스 접근함.");
+                        return;
+                    }
+                }
+            }
+        }
         filterChain.doFilter(request, response);
     }
 }
