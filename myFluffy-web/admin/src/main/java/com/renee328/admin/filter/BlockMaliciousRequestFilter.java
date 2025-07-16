@@ -76,13 +76,21 @@ public class BlockMaliciousRequestFilter extends OncePerRequestFilter {
             return;
         }
 
+        // User-Agent 누락 차단
+        if (userAgent == null || userAgent.trim().isEmpty()) {
+            log.warn("[User-Agent 없음] IP: {}, URI: {}", ip, uri);
+            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: User-Agent 누락됨.");
+            return;
+        }
+
         // 비정상 User-Agent 차단
         if (userAgent != null) {
             String ua = userAgent.toLowerCase();
+            String uaNormalized = ua.replaceAll("[^a-z0-9]", "");
 
             // 전역 User-Agent 필터링
             for (String badUserAgent : BLOCKED_USER_AGENTS) {
-                if (ua.contains(badUserAgent)) {
+                if (ua.contains(badUserAgent) || uaNormalized.contains(badUserAgent)) {
                     log.warn("[비정상적인 User-Agent 접근] IP: {}, UA: {}, URI: {}", ip, userAgent, uri);
                     response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 비정상적인 User-Agent.");
                     return;
@@ -92,15 +100,15 @@ public class BlockMaliciousRequestFilter extends OncePerRequestFilter {
             // 정적 리소스 접근 시 UA 추가 필터링
             if ((uri.startsWith("/assets") || uri.startsWith("/ckeditor5-custom"))) {
                 for (String badUserAgent : BLOCKED_USER_AGENTS) {
-                    if (ua.contains(badUserAgent)) {
+                    if (ua.contains(badUserAgent) || uaNormalized.contains(badUserAgent)) {
                         log.warn("[정적 리소스에 비정상 UA 접근 차단] IP: {}, UA: {}, URI: {}", ip, userAgent, uri);
-                        response.setStatus(HttpStatus.NOT_ACCEPTABLE.value()); // 406
                         response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 비정상 UA로 정적 리소스 접근함.");
                         return;
                     }
                 }
             }
         }
+
         filterChain.doFilter(request, response);
     }
 }
