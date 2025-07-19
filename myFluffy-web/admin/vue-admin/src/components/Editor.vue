@@ -167,6 +167,9 @@ import { hasAnyRole } from '../util/roleUtils.js';
 const isUploading = ref(false);
 const uploadError = ref('');
 
+// 업로드된 이미지 목록 추적
+const uploadedImages = ref([]);
+
 const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
@@ -239,7 +242,11 @@ class MyUploadAdapter {
           }
         }).then(response => {
           isUploading.value = false;
-          resolve({ default: response.data.default });
+          resolve({
+            default: `/uploads/images/${response.data.default}`
+          });
+          // 업로드된 이미지 URL 저장
+          uploadedImages.value.push(`/uploads/images/${response.data.default}`);
         }).catch(err => {
           isUploading.value = false;
           uploadError.value = '이미지 업로드 실패';
@@ -457,7 +464,6 @@ const writePost = async () => {
 
   const board = boards.value.find(b => b.boardId === newPost.boardId);
   newPost.boardCategoryId = board ? board.boardCategoryId : null;
-  // newPost.images = extractImageUrls(newPost.content).map(url => ({ imageUrl: url }));
 
   // 이미지 URL 추출 후, 본문 내 이미지가 하나라도 있으면 images를 덮어씀
   const currentImages = extractImageUrls(newPost.content);
@@ -496,6 +502,23 @@ const writePost = async () => {
         headers: { Authorization: `Bearer ${authStore.accessToken}` }
       });
       console.log('게시글 작성 성공: ', response.data);
+
+      // 본문에 사용된 이미지와 업로드된 이미지 비교하여 미사용 이미지 삭제
+      const usedImages = extractImageUrls(newPost.content);
+      const unusedImages = uploadedImages.value.filter((url) => !usedImages.includes(url));
+
+      if (unusedImages.length > 0) {
+        try {
+          await apiClient.post('/post/cleanup-temp', unusedImages, {
+            headers: { Authorization: `Bearer ${authStore.accessToken}` }
+          });
+        } catch (cleanupErr) {
+          console.warn('사용되지 않은 이미지 삭제 실패:', cleanupErr);
+        }
+      }
+
+      uploadedImages.value = [];
+
       router.push({ name: 'PostManagement' });
     } catch (error) {
       console.error('게시글 작성 실패: ', error);

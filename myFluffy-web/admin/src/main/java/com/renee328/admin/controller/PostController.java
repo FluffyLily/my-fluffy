@@ -57,11 +57,11 @@ public class PostController {
         return ResponseEntity.ok(weeklyCounts);
     }
 
-    // 게시글 작성하기
-    @PostMapping("/write")
-    public ResponseEntity<?> writePost(@RequestBody PostDto postDto) {
-        postService.writePost(postDto);
-        return ResponseEntity.ok(Map.of("message", "게시글이 작성되었습니다."));
+    // 게시글 세부내용 조회
+    @GetMapping("/detail/{postId}")
+    public ResponseEntity<PostDto> getPostDetails(@PathVariable Long postId) {
+        PostDto postDetails = postService.getPostDetails(postId);
+        return ResponseEntity.ok(postDetails);
     }
 
     // 이미지 업로드
@@ -71,11 +71,18 @@ public class PostController {
         return ResponseEntity.ok(Map.of("default", imageUrl));
     }
 
-    // 게시글 세부내용 조회
-    @GetMapping("/detail/{postId}")
-    public ResponseEntity<PostDto> getPostDetails(@PathVariable Long postId) {
-        PostDto postDetails = postService.getPostDetails(postId);
-        return ResponseEntity.ok(postDetails);
+    // 게시글 작성하기
+    @PostMapping("/write")
+    public ResponseEntity<?> writePost(@RequestBody PostDto postDto) {
+        postService.writePost(postDto);
+        return ResponseEntity.ok(Map.of("message", "게시글이 작성되었습니다."));
+    }
+
+    // 에디터에 업로드했던 임시 이미지 파일 지우기
+    @PostMapping("/cleanup-temp")
+    public ResponseEntity<?> cleanupTempImages(@RequestBody List<String> unusedImages) {
+        fileService.cleanupTempImages(unusedImages);
+        return ResponseEntity.ok(Map.of("message", "사용하지 않은 이미지가 삭제되었습니다."));
     }
 
     // 게시글 수정하기
@@ -98,5 +105,4 @@ public class PostController {
         List<String> tags = postService.getAllTags();
         return ResponseEntity.ok(tags);
     }
-
 }

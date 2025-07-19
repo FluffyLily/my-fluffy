@@ -2,7 +2,6 @@ package com.renee328.service;
 
 import com.renee328.dto.BbsCategoryDto;
 import com.renee328.dto.BoardDto;
-
 import java.util.List;
 
 public interface BoardService {

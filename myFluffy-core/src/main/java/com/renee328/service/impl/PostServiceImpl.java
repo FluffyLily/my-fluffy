@@ -9,11 +9,13 @@ import com.renee328.mapper.PostTagMapper;
 import com.renee328.mapper.TagMapper;
 import com.renee328.service.FileService;
 import com.renee328.service.PostService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -23,7 +25,7 @@ public class PostServiceImpl implements PostService {
     private final PostTagMapper postTagMapper;
     private final PostImageMapper postImageMapper;
     private final FileService fileService;
-
+    private static final Logger log = LoggerFactory.getLogger(FileServiceImpl.class);
     public PostServiceImpl(PostMapper postMapper, TagMapper tagMapper, PostTagMapper postTagMapper, PostImageMapper postImageMapper, FileService fileService) {
         this.postMapper = postMapper;
         this.tagMapper = tagMapper;
@@ -56,26 +58,7 @@ public class PostServiceImpl implements PostService {
         return postMapper.getPostCountLast7Days();
     }
 
-    // 게시글 작성하기
-    @Transactional
-    @Override
-    public void writePost(PostDto postDto) {
-        setPostCategoryString(postDto);
-        postMapper.insertPost(postDto);
-        insertTag(postDto);
-
-        // 이미지 저장
-        if (postDto.getImages() != null && !postDto.getImages().isEmpty()) {
-            for (PostImageDto postImageDto : postDto.getImages()) {
-                postImageDto.setPostId(postDto.getPostId());
-                postImageMapper.insertPostImage(postImageDto);
-            }
-        }
-
-        fileService.cleanupUnusedImages(postDto.getPostId(), postDto.getContent());
-    }
-
-    // 게시글 세부내용 조회하기
+    // 게시글 세부내용 조회
     @Override
     public PostDto getPostDetails(Long postId) {
         PostDto postDto = postMapper.getPostDetails(postId);
@@ -93,42 +76,37 @@ public class PostServiceImpl implements PostService {
         return postDto;
     }
 
+    // 게시글 작성하기
+    @Transactional
+    @Override
+    public void writePost(PostDto postDto) {
+        setPostCategoryString(postDto);
+        postMapper.insertPost(postDto);
+        insertTag(postDto);
+        Long postId = postDto.getPostId();
+        saveImages(postDto, postId);
+    }
+
     // 게시글 수정하기
     @Transactional
     @Override
     public void updatePost(PostDto postDto) {
         setPostCategoryString(postDto);
         postMapper.updatePost(postDto);
-        postTagMapper.deleteByPostId(postDto.getPostId());
-        fileService.cleanupUnusedImages(postDto.getPostId(), postDto.getContent());
-        postImageMapper.deletePostImagesByPostId(postDto.getPostId());
+        Long postId = postDto.getPostId();
+        postTagMapper.deleteByPostId(postId);
         insertTag(postDto);
-
-        // 새로운 이미지 저장
-        if (postDto.getImages() != null && !postDto.getImages().isEmpty()) {
-            for (PostImageDto postImageDto : postDto.getImages()) {
-                postImageDto.setPostId(postDto.getPostId());
-                postImageMapper.insertPostImage(postImageDto);
-            }
-        }
-    }
-
-    // 게시글 내용만 조회 (삭제 전에 임시 저장 이미지 정리용)
-    @Override
-    public String getPostContentById(Long postId) {
-        return postMapper.getPostContentById(postId);
+        cleanupUnusedImages(postDto, postId);
+        postImageMapper.deletePostImagesByPostId(postId);
+        saveImages(postDto, postId);
     }
 
     // 게시글 삭제하기
     @Transactional
     @Override
     public void deletePost(Long postId, String deleterId, String postTitle) {
-        // 삭제 전 이미지 정리
-        String content = getPostContentById(postId);
-        if (content != null) {
-            fileService.cleanupUnusedImages(postId, content);
-        }
-
+        // 서버에서 이미지 파일 지우기
+        fileService.cleanupUnusedImages(postId, Collections.emptyList());
         postMapper.logPostDeletion(deleterId, postTitle);
         postTagMapper.deleteByPostId(postId);
         postImageMapper.deletePostImagesByPostId(postId);
@@ -139,6 +117,29 @@ public class PostServiceImpl implements PostService {
     @Override
     public List<String> getAllTags() {
         return tagMapper.findAllTagNames();
+    }
+
+    // 게시글 이미지 저장하기
+    private void saveImages(PostDto postDto, Long postId) {
+        if (postDto.getImages() != null && !postDto.getImages().isEmpty()) {
+            for (PostImageDto postImageDto : postDto.getImages()) {
+                postImageDto.setPostId(postId);
+                postImageMapper.insertPostImage(postImageDto);
+            }
+        }
+    }
+
+    // 게시글에 실제로 사용하지 않는 이미지 서버에서 삭제하기
+    private void cleanupUnusedImages(PostDto postDto, Long postId) {
+        List<String> usedImages;
+        if (postDto.getImages() != null) {
+            usedImages = postDto.getImages().stream()
+                    .map(PostImageDto::getImageUrl)
+                    .collect(Collectors.toList());
+        } else {
+            usedImages = List.of();
+        }
+        fileService.cleanupUnusedImages(postId, usedImages);
     }
 
     // 캐시용 게시글 카테고리 (태그) 저장하기

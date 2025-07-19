@@ -14,6 +14,8 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Value("${file.upload.base-dir}")
     private String baseDir;
+    @Value("${file.upload.base-url}")
+    private String baseUrl;
 
     public WebConfig(CacheControlInterceptor cacheControlInterceptor) {
         this.cacheControlInterceptor = cacheControlInterceptor;
@@ -27,7 +29,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/uploads/images/**")
+        registry.addResourceHandler(baseUrl + "/**")
                 .addResourceLocations("file:" + baseDir + "/");
     }
 }

@@ -11,9 +11,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 
 @Service
@@ -23,7 +20,6 @@ public class BoardServiceImpl implements BoardService {
     private final AdminMapper adminMapper;
     private final BoardMapper boardMapper;
     private final BbsCategoryMapper bbsCategoryMapper;
-    private static final Logger log = LoggerFactory.getLogger(BoardServiceImpl.class);
 
     public BoardServiceImpl(AdminMapper adminMapper, BoardMapper boardMapper, BbsCategoryMapper bbsCategoryMapper) {
         this.adminMapper = adminMapper;
