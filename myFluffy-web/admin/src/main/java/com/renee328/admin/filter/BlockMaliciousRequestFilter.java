@@ -29,22 +29,22 @@ public class BlockMaliciousRequestFilter extends OncePerRequestFilter {
         for (String pattern : BLOCKED_URI_PATTERNS) {
             if (uri.toLowerCase().contains(pattern)) {
                 log.warn("[허용되지 않는 URI 패턴 경로로 접근] IP: {}, URI: {}, 패턴: {}", ip, uri, pattern);
-                response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 허용되지 않는 URI 패턴 경로로 접근함.");
+                response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 허용되지 않는 URI 경로로 접근함.");
                 return;
             }
         }
 
         // admin으로 시작하는 경로 차단 (단, /api/admin/**는 제외)
         if ((uri.equals("/admin") || uri.startsWith("/admin/")) && !uri.startsWith("/api/admin")) {
-            log.warn("[허용되지 않는 관리자(/admin) 엔드포인트로 접근] IP: {}, URI: {}", ip, uri);
-            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 허용되지 않는 관리자(/admin) 엔드포인트로 접근함.");
+            log.warn("[로그인하지 않고 관리자(/admin) 엔드포인트로 접근] IP: {}, URI: {}", ip, uri);
+            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 로그인하지 않고 관리자(/admin) 경로로 접근함.");
             return;
         }
 
         // login으로 시작하는 경로 차단 (단, /api/auth/login은 제외)
         if (!uri.startsWith("/api/auth") && (uri.equals("/login") || uri.startsWith("/login/"))) {
             log.warn("[허용되지 않는 로그인(/login) 엔드포인트로 접근] IP: {}, URI: {}", ip, uri);
-            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 허용되지 않는 로그인(/login) 엔드포인트로 접근함.");
+            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 허용되지 않는 로그인(/login) 경로로 접근함.");
             return;
         }
 
@@ -58,21 +58,21 @@ public class BlockMaliciousRequestFilter extends OncePerRequestFilter {
         boolean allowed = ALLOWED_PREFIXES.stream().anyMatch(uri::startsWith);
         if (!allowed) {
             log.warn("[허용되지 않은 접두사로 시작하는 경로로 접근] IP: {}, URI: {}", ip, uri);
-            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 허용되지 않은 접두사로 시작하는 경로로 접근함.");
+            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 허용되지 않은 경로로 접근함.");
             return;
         }
 
         // 의심스러운 파일 확장자 접근 차단
         if (uri.endsWith(".php") || uri.endsWith(".env") || uri.endsWith(".bak")) {
             log.warn("[의심스러운 파일 확장자 접근] IP: {}, URI: {}", ip, uri);
-            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 의심스러운 파일 요청.");
+            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 의심스러운 파일 요청 차단.");
             return;
         }
 
         // 의심스러운 JS 리소스 요청 차단
         if (uri.matches("^/(jquery|bootstrap|config|env|main).*\\.js$")) {
             log.warn("[의심스러운 JS 리소스 요청 탐지] IP: {}, URI: {}", ip, uri);
-            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 존재하지 않는 정적 리소스 요청");
+            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 존재하지 않는 정적 리소스를 요청함.");
             return;
         }
 
