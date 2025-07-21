@@ -478,6 +478,22 @@ const writePost = async () => {
         headers: { Authorization: `Bearer ${authStore.accessToken}` }
       });
       console.log('게시글 수정 성공: ', response.data);
+
+      // 본문에 사용된 이미지와 업로드된 이미지 비교하여 미사용 이미지 삭제
+      const usedImages = extractImageUrls(newPost.content);
+      const unusedImages = uploadedImages.value.filter((url) => !usedImages.includes(url));
+
+      if (unusedImages.length > 0) {
+        try {
+          await apiClient.post('/post/cleanup-temp', unusedImages, {
+            headers: { Authorization: `Bearer ${authStore.accessToken}` }
+          });
+        } catch (cleanupErr) {
+          console.warn('사용되지 않은 이미지 삭제 실패:', cleanupErr);
+        }
+      }
+      uploadedImages.value = [];
+
       router.push({
         name: 'PostDetail',
         params: { postId: props.postId },
