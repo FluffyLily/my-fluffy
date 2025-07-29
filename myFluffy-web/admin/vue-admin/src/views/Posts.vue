@@ -166,9 +166,7 @@ const focusedId = ref(
 );
 const fetchBoards = async () => {
   try {
-    const response = await apiClient.get('/board/list', {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
-    });
+    const response = await apiClient.get('/board/list');
     boards.value = response.data;
   } catch (e) {
     console.error('게시판 목록 불러오기 실패:', e);
@@ -182,9 +180,6 @@ const fetchPosts = async () => {
       {
         ...searchCondition,
         isVisible: searchCondition.isVisible ? true : null
-      },
-      {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
       }
     );
     posts.value = response.data.posts.map(post => {

@@ -1,5 +1,5 @@
 import '@ckeditor/ckeditor5-theme-lark/theme/index.css';
-import SimpleUploadAdapter from '@ckeditor/ckeditor5-upload/src/adapters/simpleuploadadapter'; 
+import SimpleUploadAdapter from '@ckeditor/ckeditor5-upload/src/adapters/simpleuploadadapter';
 import ClassicEditorBase from '@ckeditor/ckeditor5-editor-classic/src/classiceditor.js';
 
 import Essentials from '@ckeditor/ckeditor5-essentials/src/essentials.js';
@@ -65,7 +65,7 @@ ClassicEditor.builtinPlugins = [
   Alignment,
   SpecialCharacters,
   SpecialCharactersEssentials,
-  SimpleUploadAdapter
+  // SimpleUploadAdapter
 ];
 
 ClassicEditor.defaultConfig = {
@@ -93,16 +93,20 @@ ClassicEditor.defaultConfig = {
   image: {
     resizeUnit: '%',
     toolbar: [
-      'imageStyle:full', 'imageStyle:side',
+      'imageStyle:inline', 'imageStyle:block', 'imageStyle:side',
       '|',
       'imageTextAlternative'
     ],
-    styles: ['full', 'side']
+    styles: [
+      'inline',
+      'block', 
+      'side'
+    ]
   },
-  simpleUpload: {
-    uploadUrl: '',
-    headers: {}
-  },
+  // simpleUpload: {
+  //   uploadUrl: '',
+  //   headers: {}
+  // },
   table: {
     contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
   },

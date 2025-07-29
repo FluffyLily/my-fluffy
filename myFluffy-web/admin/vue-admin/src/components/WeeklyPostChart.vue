@@ -18,22 +18,22 @@ import { ref, watch } from 'vue'
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const props = defineProps({
-labels: Array,
-counts: Array
+  labels: Array,
+  counts: Array
 })
 
 const chartData = ref({
-labels: [],
-datasets: [
-    {
-    label: '게시글 수',
-    data: [],
-    backgroundColor: 'rgba(255, 182, 212, 0.7)',
-    borderColor: '#FFB6D4',
-    borderWidth: 1,
-    borderRadius: 5
-    }
-]
+  labels: [],
+  datasets: [
+      {
+        label: '게시글 수',
+        data: [],
+        backgroundColor: 'rgba(255, 182, 212, 0.7)',
+        borderColor: '#FFB6D4',
+        borderWidth: 1,
+        borderRadius: 5
+      }
+  ]
 })
 
 watch(
@@ -65,25 +65,25 @@ watch(
 )
 
 const chartOptions = {
-responsive: true,
-plugins: {
+  responsive: true,
+  plugins: {
     legend: {
-    display: false
+      display: false
     },
     tooltip: {
-    callbacks: {
+      callbacks: {
         label: ctx => ` ${ctx.raw}건`
+      }
     }
-    }
-},
-scales: {
+  },
+  scales: {
     y: {
-    beginAtZero: true,
-    suggestedMax: 5,
-    ticks: {
+      beginAtZero: true,
+      suggestedMax: 5,
+      ticks: {
         stepSize: 1
+      }
     }
-    }
-}
+  }
 }
 </script>

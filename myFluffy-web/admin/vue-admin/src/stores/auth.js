@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { jwtDecode } from 'jwt-decode';
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
@@ -12,6 +13,14 @@ export const useAuthStore = defineStore("auth", {
     setAccessToken(accessToken) {
       this.accessToken = accessToken;
       localStorage.setItem("accessToken", accessToken);
+
+      try {
+        const decoded = jwtDecode(accessToken);
+        this.userId = decoded.userId;
+      } catch (e) {
+        console.error("JWT 디코딩 실패:", e);
+        this.userId = null;
+      }
     },
     clearAccessToken() {
       this.accessToken = null;

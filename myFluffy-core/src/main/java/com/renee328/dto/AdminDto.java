@@ -14,8 +14,8 @@ public class AdminDto {
     private LocalDateTime updatedAt; // 수정_일시
     private Long updatedBy;          // 수정자_순번
     @JsonProperty("isInitialized")
-    private Boolean isInitialized;    // 초기화_가부
-    private Boolean isActive;         // 사용_가부
+    private Boolean isInitialized;   // 초기화_가부
+    private Boolean isActive;        // 사용_가부
     private String loginToken;       // 로그인_토큰
     private String loginPassword;    // 로그인_비밀번호
     private String loginId;          // 로그인_아이디

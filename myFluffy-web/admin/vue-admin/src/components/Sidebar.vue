@@ -20,6 +20,7 @@ import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from "../stores/auth";
 import { hasAnyRole } from "../util/roleUtils";
+import { faHome, faUser, faUsersCog, faThList, faFileAlt, faBell} from '@fortawesome/free-solid-svg-icons';
 
 const route = useRoute();
 const router = useRouter();
@@ -29,12 +30,12 @@ const authStore = useAuthStore();
 const filteredMenuItems = computed(() => {
   const userRole = authStore.roleId;
   const menu = [
-    { name: '대시보드', path: '/main', icon: 'fa-home' },
-    { name: '관리자 관리', path: '/admin', icon: 'fa-users-cog' },
-    { name: '게시판 관리', path: '/board', icon: 'fa-th-list' },
-    { name: '게시글 관리', path: '/post', icon: 'fa-file-alt' },
-    { name: '회원 관리', path: '/user', icon: 'fa-user' },
-    { name: '시스템 공지', path: '/notice', roles: ['ROLE_ADMIN', 'ROLE_SUPER_ADMIN'], icon: 'fa-bell' }
+    { name: '대시보드', path: '/main', icon: faHome },
+    { name: '관리자 관리', path: '/admin', icon: faUsersCog },
+    { name: '게시판 관리', path: '/board', icon: faThList },
+    { name: '게시글 관리', path: '/post', icon: faFileAlt },
+    { name: '회원 관리', path: '/user', icon: faUser },
+    { name: '시스템 공지', path: '/notice', roles: ['ROLE_ADMIN', 'ROLE_SUPER_ADMIN'], icon: faBell }
   ];
 
   // 권한 체크하여 메뉴 필터링

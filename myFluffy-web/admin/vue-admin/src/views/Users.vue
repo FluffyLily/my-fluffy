@@ -88,9 +88,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { format } from 'date-fns';
 import apiClient from '../api/axios';
-import { useAuthStore } from '../stores/auth';
 
-const authStore = useAuthStore();
 const users = ref([]);
 const totalCount = ref(0);
 
@@ -105,9 +103,7 @@ const searchCondition = reactive({
 
 const fetchUsers = async () => {
   try {
-    const response = await apiClient.post('/user/list', searchCondition, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
-    });
+    const response = await apiClient.post('/user/list', searchCondition);
     users.value = response.data.users;
     totalCount.value = response.data.totalCount;
 
@@ -143,7 +139,7 @@ const goToPage = (page) => {
   const safePage = Math.min(page, totalPages.value);
   if (safePage < 1) return;
   searchCondition.offset = (safePage - 1) * searchCondition.limit;
-  fetchPosts();
+  fetchUsers();
 };
 
 const visiblePages = computed(() => {

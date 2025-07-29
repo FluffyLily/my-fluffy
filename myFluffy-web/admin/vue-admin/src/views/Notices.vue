@@ -176,9 +176,7 @@ const visiblePages = computed(() => {
 const fetchNotices = async () => {
   
     try {
-      const response = await apiClient.post('/notice', searchCondition, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
-      });
+      const response = await apiClient.post('/notice', searchCondition);
       notices.value = response.data.notices;
       totalCount.value = response.data.totalCount;
 
@@ -228,9 +226,7 @@ const closeNoticeModal = () => {
 
 const goToNotice = async (notice) => {
   try {
-    const response = await apiClient.get(`/notice/detail/${notice.noticeId}`, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
-    });
+    const response = await apiClient.get(`/notice/detail/${notice.noticeId}`);
     const noticeDetails = response.data;
     newNotice.title = noticeDetails.title;
     newNotice.content = noticeDetails.content;
@@ -271,8 +267,6 @@ const createNotice = async () => {
       createdAt: new Date().toISOString(),
       createdBy: newNotice.createdBy,
       createdByName: newNotice.createdByName
-    }, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
     });
 
     alert('공지 작성이 완료되었습니다.');
@@ -308,8 +302,6 @@ const updateNotice = async () => {
       updatedAt: new Date().toISOString(),
       updatedBy: newNotice.updatedBy,
       updatedByName: newNotice.updatedByName
-    }, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
     });
 
     alert("공지 수정이 완료되었습니다.");
@@ -329,8 +321,7 @@ const deleteNotice = async (notice) => {
         params: {
           deleterId: authStore.loginId,
           title: notice.title
-        },
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
+        }
       });
       await fetchNotices();
       alert('공지 삭제가 완료되었습니다.');
@@ -380,7 +371,6 @@ onMounted(() => {
   }
 }
 
-// 필터 섹션
 .filter-section {
   display: flex;
   align-items: center;
@@ -421,8 +411,8 @@ onMounted(() => {
       background-position: right 12px center;
       background-size: 16px 16px;
       appearance: none;
-      padding-right: 28px; /* 오른쪽 여백 추가 */
-      min-width: 80px; /* 좌우 길이 확장 */
+      padding-right: 28px;
+      min-width: 80px;
     }
   }
 
@@ -675,7 +665,7 @@ onMounted(() => {
   gap: 12px;
   max-height: 70vh;
   overflow-y: auto;
-  padding: 40px 24px; /* 상단, 하단, 좌우 여백 */
+  padding: 40px 24px;
 }
 
 .modal-field h3 {

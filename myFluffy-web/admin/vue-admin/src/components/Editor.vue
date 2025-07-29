@@ -237,8 +237,7 @@ class MyUploadAdapter {
 
         apiClient.post('/post/upload-image', data, {
           headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${authStore.accessToken}`
+            'Content-Type': 'multipart/form-data'
           }
         }).then(response => {
           isUploading.value = false;
@@ -289,12 +288,12 @@ const editorConfig = reactive({
   },
   image: {
     toolbar: [
-      'imageStyle:full', 'imageStyle:side',
+      'imageStyle:side',
       '|',
       'imageTextAlternative'
     ],
     resizeUnit: '%',
-    styles: ['full', 'side']
+    styles: ['side']
   },
   extraPlugins: [CustomUploadAdapterPlugin],
   table: {
@@ -378,9 +377,7 @@ const removeTag = (index) => {
 
 const fetchTags = async () => {
   try {
-    const response = await apiClient.get('/post/tags', {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
-    });
+    const response = await apiClient.get('/post/tags');
     allTags.value = response.data;
   } catch (e) {
     console.error('태그 불러오기 실패:', e);
@@ -403,9 +400,7 @@ const onEditorReady = (editorInstance) => {
 // 게시판 목록 가져오기
 const fetchBoards = async () => {
   try {
-    const response = await apiClient.get('/board/list', {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
-    });
+    const response = await apiClient.get('/board/list');
     boards.value = response.data;
   } catch (e) {
     console.error('게시판 목록 불러오기 실패:', e);
@@ -417,9 +412,7 @@ const fetchPost = async () => {
   if (!props.postId) return;
 
   try {
-    const response = await apiClient.get(`/post/detail/${props.postId}`, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}`}
-    });
+    const response = await apiClient.get(`/post/detail/${props.postId}`);
     Object.assign(newPost, response.data);
 
     // 이미지 정보 유지
@@ -474,9 +467,7 @@ const writePost = async () => {
   if (props.postId) {
     if (!confirm("게시글을 수정하시겠습니까?")) return;
     try {
-      const response = await apiClient.put(`/post/update/${props.postId}`, newPost, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
-      });
+      const response = await apiClient.put(`/post/update/${props.postId}`, newPost);
       console.log('게시글 수정 성공: ', response.data);
 
       // 본문에 사용된 이미지와 업로드된 이미지 비교하여 미사용 이미지 삭제
@@ -485,9 +476,7 @@ const writePost = async () => {
 
       if (unusedImages.length > 0) {
         try {
-          await apiClient.post('/post/cleanup-temp', unusedImages, {
-            headers: { Authorization: `Bearer ${authStore.accessToken}` }
-          });
+          await apiClient.post('/post/cleanup-temp', unusedImages);
         } catch (cleanupErr) {
           console.warn('사용되지 않은 이미지 삭제 실패:', cleanupErr);
         }
@@ -514,9 +503,7 @@ const writePost = async () => {
   } else {
     if (!confirm("새로운 게시글을 작성하시겠습니까?")) return;
     try {
-      const response = await apiClient.post('/post/write', newPost, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
-      });
+      const response = await apiClient.post('/post/write', newPost);
       console.log('게시글 작성 성공: ', response.data);
 
       // 본문에 사용된 이미지와 업로드된 이미지 비교하여 미사용 이미지 삭제
@@ -525,9 +512,7 @@ const writePost = async () => {
 
       if (unusedImages.length > 0) {
         try {
-          await apiClient.post('/post/cleanup-temp', unusedImages, {
-            headers: { Authorization: `Bearer ${authStore.accessToken}` }
-          });
+          await apiClient.post('/post/cleanup-temp', unusedImages);
         } catch (cleanupErr) {
           console.warn('사용되지 않은 이미지 삭제 실패:', cleanupErr);
         }
@@ -594,17 +579,14 @@ const deletePost = async () => {
     const response = await apiClient.post('/admin/verify-password', {
     username: authStore.loginId, 
     password: deletePassword.value 
-    }, {
-    headers: { Authorization: `Bearer ${authStore.accessToken}` } 
     });
     if (response.data.success) {
 
         await apiClient.delete(`/post/delete/${selectedPostId.value}`, {
-            headers: { Authorization: `Bearer ${authStore.accessToken}` },
-            params: { 
+          params: { 
             deleterId: authStore.loginId,
             postTitle: selectedPostTitle.value
-            }
+          }
         });
         showDeletePostModal.value = false;
         deletePassword.value = '';
@@ -619,14 +601,15 @@ const deletePost = async () => {
 
 }
 
-onMounted(() => {
+onMounted(async () => {
   editor.value = window.ClassicEditor
-  fetchBoards().then(() => {
-    if (props.postId) {
-      fetchPost();
-    }
-  });
-  fetchTags();
+  await fetchBoards();
+
+  if (props.postId) {
+    await fetchPost();
+  }
+
+  await fetchTags();
 })
 
 </script>
@@ -914,6 +897,13 @@ select.form-control {
       }
     }
   }
+}
+
+.image-style-full {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
 }
 </style>
 

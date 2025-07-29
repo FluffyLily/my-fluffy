@@ -9,7 +9,6 @@ import Editor from '../components/Editor.vue';
 import Main from '../views/Main.vue'
 import Notices from '../views/Notices.vue';
 import Admin from '../views/Admin.vue'
-import apiClient from "../api/axios.js";
 
 const routes = [
   { 
@@ -85,7 +84,6 @@ const routes = [
     }),
     meta: { requiresAuth: true }
   }
-
 ]
 
 const router = createRouter({
@@ -93,25 +91,19 @@ const router = createRouter({
   routes,
 });
 
-// 라우트 가드 (로그인 상태 확인)
+function isLoggedIn() {
+  return !!useAuthStore().accessToken;
+}
+
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
-  const accessToken = authStore.accessToken;
-  const requiresAuth = to.meta.requiresAuth;
 
-  // 토큰이 있으면 Authorization 헤더 설정
-  if (accessToken) {
-    apiClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-  }
-
-  // 로그인 필수 페이지 접근 시
-  if (requiresAuth && !accessToken) {
-    authStore.clearAccessToken(); // 혹시라도 남아있을 수 있으니까 정리
+  if (to.meta.requiresAuth && !isLoggedIn()) {
+    authStore.clearAccessToken();
     return next('/');
   }
 
-  // 로그인 상태로 / 접근 시 /main으로 이동
-  if (to.path === '/' && accessToken) {
+  if (to.path === '/' && isLoggedIn()) {
     return next('/main');
   }
   next();

@@ -16,7 +16,7 @@
         </div>
         <div class="modal-body">
           <label class="form-label d-block text-start">아이디</label>
-          <input v-model="profileForm.loginId" class="form-control mb-2" readonly />
+          <input :value="profileForm.loginId" class="form-control mb-2" readonly />
 
           <label class="form-label d-block text-start">현재 비밀번호</label>
           <input v-model="profileForm.currentPassword" type="password" class="form-control mb-2"/>
@@ -55,7 +55,6 @@ const profileForm = ref({
   loginId: authStore.loginId,
   currentPassword: '',
   loginPassword: '',
-  updatedAt: '',
   updatedBy: authStore.userId
 });
 const confirmNewPassword = ref('');
@@ -107,8 +106,6 @@ const validateCurrentPassword = async (currentPassword, loginId) => {
     const response = await apiClient.post('/admin/verify-password', {
       username: loginId,
       password: currentPassword
-    }, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
     });
     return response.data.success;
   } catch (error) {
@@ -125,17 +122,14 @@ const updateProfile = async () => {
       currentPasswordError.value = "현재 비밀번호가 일치하지 않습니다.";
       return;
     }
-    profileForm.value.updatedAt = new Date().toISOString();
     try {
-      await apiClient.put(`/admin/update-profile/${authStore.userId}`, profileForm.value, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
-      });
+      await apiClient.put(`/admin/update-profile/${authStore.userId}`, profileForm.value);
       alert("비밀번호가 변경되었습니다.");
       showProfileModal.value = false;
     } catch (error) {
-      console.error("Error updating profile:", error.response);
+      console.error("비밀번호 변경 오류: ", error.response);
       if (error.response && error.response.data) {
-        console.error("Server Response:", error.response.data);
+        console.error("서버 응답: ", error.response.data);
       }
     }
   }
@@ -150,7 +144,7 @@ const logout = async () => {
     authStore.clearUserId();
     await router.push("/");
   } catch (error) {
-    console.error("로그아웃 실패:", error);
+    console.error("로그아웃 실패: ", error);
   }
 };
 </script>

@@ -112,9 +112,7 @@ const canDelete = computed(() =>
 
 const fetchPost = async () => {
     try {
-        const response = await apiClient.get(`/post/detail/${postId}`, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
-        });
+        const response = await apiClient.get(`/post/detail/${postId}`);
         post.value = response.data;
         if (response.data.postCategoryString) {
         postTags.value = response.data.postCategoryString.split(',').map(tag => tag.trim());
@@ -163,25 +161,22 @@ const deletePost = async () => {
 
     try {
         const response = await apiClient.post('/admin/verify-password', {
-        username: authStore.loginId,
-        password: deletePassword.value
-        }, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
+            username: authStore.loginId,
+            password: deletePassword.value
         });
 
         if (response.data.success) {
-        await apiClient.delete(`/post/delete/${selectedPostId.value}`, {
-            params: {
-            deleterId: authStore.loginId,
-            postTitle: selectedPostTitle.value
-            },
-            headers: { Authorization: `Bearer ${authStore.accessToken}` }
-        });
-        showDeletePostModal.value = false;
-        deletePassword.value = '';
-        router.push({ name: 'PostManagement' });
+            await apiClient.delete(`/post/delete/${selectedPostId.value}`, {
+                params: {
+                    deleterId: authStore.loginId,
+                    postTitle: selectedPostTitle.value
+                }
+            });
+            showDeletePostModal.value = false;
+            deletePassword.value = '';
+            router.push({ name: 'PostManagement' });
         } else {
-        deleteError.value = '비밀번호가 일치하지 않습니다.';
+            deleteError.value = '비밀번호가 일치하지 않습니다.';
         }
     } catch (error) {
         console.error('게시글을 삭제하지 못함: ', error);
@@ -196,7 +191,12 @@ const formatDate = (date) => {
 };
 
 onMounted(() => {
-    fetchPost();
+    if (postId) {
+        fetchPost();
+    } else {
+        console.warn('postId가 없어 게시글 상세 조회를 할 수 없음.');
+    }
+
     if (route.query.edited) {
         alert('게시글이 성공적으로 수정되었습니다.');
     }

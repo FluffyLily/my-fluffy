@@ -12,7 +12,6 @@
           <input v-model="password" type="password" id="password" class="form-control" placeholder="비밀번호 입력" />
         </div>
         <p v-if="errorMessage" class="text-danger text-center">{{ errorMessage }}</p>
-        <!-- 로딩 상태에 따라 버튼 텍스트나 로딩 표시 -->
         <button type="submit" class="btn btn-primary w-100" :disabled="isLoading">
           <span v-if="isLoading" class="spinner-border-custom" role="status" aria-hidden="true"></span>
           {{ isLoading ? '로딩중...' : '로그인' }}
@@ -23,7 +22,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted } from 'vue';
+import { ref, nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import apiClient from "../api/axios";
 import { useAuthStore } from '../stores/auth';
@@ -34,10 +33,7 @@ const username = ref('')
 const password = ref('')
 const errorMessage = ref('')
 const isLoading = ref(false);
-
 const authStore = useAuthStore();
-watch(() => authStore.accessToken, (newToken) => {
-});
 
 const handleLogin = async () => {
   const success = await login();
@@ -59,13 +55,9 @@ const login = async () => {
 
     if (accessToken) {
       authStore.setAccessToken(accessToken);
-      apiClient.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
 
-      // 토큰에서 사용자 정보 추출 후 store에 저장
       const decodedToken = jwtDecode(accessToken);
-      const userId = decodedToken.userId; 
-      const loginId = decodedToken.sub;
-      const roleId = decodedToken.role;
+      const { userId, sub: loginId, role: roleId } = decodedToken;
       authStore.setUserId(userId);
       authStore.setLoginId(loginId);
       authStore.setRoleId(roleId);

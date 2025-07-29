@@ -198,8 +198,8 @@ import { useRouter } from 'vue-router';
   const authStore = useAuthStore();
   const userId = authStore.userId;
   const boardList = ref([]);
-  const categories = ref([]); // 카테고리 목록
-  const filteredBoards = ref([]); // 필터링된 게시판 목록
+  const categories = ref([]);
+  const filteredBoards = ref([]);
   const allCategory = reactive({
     name: '전체',
     colorClass: ''
@@ -297,14 +297,12 @@ import { useRouter } from 'vue-router';
 
     selectedBoardId.value = null;
     searchCondition.boardId = null;
-    await fetchPosts(); // 전체 게시글 조회
+    await fetchPosts();
     updateActiveBoard();
     return;
   }
     try {
-      const response = await apiClient.get(`/board/detail/${board.boardId}`, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
-      });
+      const response = await apiClient.get(`/board/detail/${board.boardId}`);
 
       if (response.data) {
         selectedBoard.boardId = null;
@@ -336,11 +334,9 @@ import { useRouter } from 'vue-router';
   const selectAllCategories = async () => {
 
     try {
-      const response = await apiClient.get('/board/category', {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
-      });
+      const response = await apiClient.get('/board/category');
       categories.value = response.data.map(category => {
-        assignRandomColorClass(category); // 각 카테고리에 한 번만 랜덤 색상 지정
+        assignRandomColorClass(category);
         return category;
       });
     } catch (error) {
@@ -386,13 +382,11 @@ import { useRouter } from 'vue-router';
     }
     if (confirm("새로운 게시판 카테고리를 생성하시겠습니까?")) {
       try {
-        const response = await apiClient.post('/board/category', newCategory.value, {
-          headers: { Authorization: `Bearer ${authStore.accessToken}` }
-        });
+        await apiClient.post('/board/category', newCategory.value);
         await selectAllCategories();
 
-        newCategory.value.boardCategoryName = ''; // 입력 필드 초기화
-        showCreateCategoryModal.value = false; // 모달 닫기
+        newCategory.value.boardCategoryName = '';
+        showCreateCategoryModal.value = false;
       } catch (error) {
         console.error('카테고리 추가 실패:', error);
       }
@@ -409,12 +403,10 @@ import { useRouter } from 'vue-router';
       newBoard.value.createdAt = new Date().toISOString();
       newBoard.value.updatedAt = new Date().toISOString();
       try {
-        const response = await apiClient.post('/board/create', newBoard.value, {
-          headers: { Authorization: `Bearer ${authStore.accessToken}` }
-        });
+        await apiClient.post('/board/create', newBoard.value);
         await getBoardList();
         newBoard.value.boardName = '';
-        newBoard.value.boardCategoryId = null; // 초기화
+        newBoard.value.boardCategoryId = null;
         showCreateBoardModal.value = false;
       } catch (error) {
         console.error('게시판 추가 실패:', error);
@@ -444,7 +436,7 @@ import { useRouter } from 'vue-router';
   const allCategories = ref([]);
 
   watch(allCategories, (newVal) => {
-    console.log("📌 allCategories 데이터:", newVal);
+    console.log("allCategories 데이터:", newVal);
   }, { deep: true });
 
   // 전체 게시글 목록 
@@ -461,11 +453,7 @@ import { useRouter } from 'vue-router';
   
   const fetchPosts = async () => {
     try {
-
-      const response = await apiClient.post('/post/list', searchCondition, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
-      });
-
+      const response = await apiClient.post('/post/list', searchCondition);
       posts.value = response.data.posts;
     } catch (error) {
       console.error('게시글 목록 조회 실패:', error);
@@ -508,9 +496,7 @@ import { useRouter } from 'vue-router';
       return;
     }
     try {
-      const response = await apiClient.get(`/board/detail/${boardId}`,{ 
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
-      });
+      const response = await apiClient.get(`/board/detail/${boardId}`);
 
       if (response.data) {
         Object.assign(selectedBoard, response.data);
@@ -549,8 +535,6 @@ import { useRouter } from 'vue-router';
           boardName: editBoard.value.boardName,
           boardCategoryId: editBoard.value.boardCategoryId,
           updatedBy: editBoard.value.updatedBy
-        }, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
         });
 
         showEditBoardModal.value = false;
@@ -565,7 +549,6 @@ import { useRouter } from 'vue-router';
 
   watch(isBoardUpdated, async (newValue) => {
     if (newValue) {
-      console.log("🔄 게시판 정보 업데이트 감지됨, 최신 데이터 불러오기...");
       await fetchBoardDetail(editBoard.value.boardId);
       isBoardUpdated.value = false;
     }
@@ -613,14 +596,11 @@ import { useRouter } from 'vue-router';
       const response = await apiClient.post('/admin/verify-password', {
       username: authStore.loginId, 
       password: deletePassword.value 
-      }, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` } 
       });
       if (response.data.success) {
         console.log("게시판 삭제 모달 [boardName]: ", selectedBoardName);
 
           await apiClient.delete(`/board/delete/${selectedBoardId.value}`, {
-              headers: { Authorization: `Bearer ${authStore.accessToken}` },
               params: { 
               deleterId: authStore.loginId,
               boardName: selectedBoardName.value
