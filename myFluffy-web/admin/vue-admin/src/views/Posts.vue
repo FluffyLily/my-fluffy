@@ -93,7 +93,6 @@
 
           <div class="pagination">
             <button :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">이전</button>
-
             <button
               v-for="page in visiblePages"
               :key="page"
@@ -102,7 +101,6 @@
             >
               {{ page }}
             </button>
-
             <button :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">다음</button>
           </div>
         </div>
@@ -114,13 +112,29 @@
 import { ref, onMounted, reactive, computed } from 'vue';
 import { format } from 'date-fns';
 import apiClient from '../api/axios.js';
-import { useAuthStore } from '../stores/auth.js';
 import { useRouter } from 'vue-router';
 import { useRoute } from 'vue-router';
 import { onBeforeRouteUpdate } from 'vue-router';
 
+// 1. 상태 변수 정의
 const route = useRoute();
-
+const router = useRouter();
+const boards = ref([]);
+const posts = ref([]);
+const totalCount = ref(0);
+const focusedId = ref(
+  route.query.focusedPostId ? Number(route.query.focusedPostId) : null
+);
+// 게시글 필터 + 검색 조건
+const searchCondition = reactive({
+  boardId: route.query.boardId ? Number(route.query.boardId) : null,
+  offset: route.query.offset ? Number(route.query.offset) : 0,
+  searchKeyword: route.query.searchKeyword || '',
+  searchType: route.query.searchType || null,
+  sort: route.query.sort || 'recent',
+  isVisible: route.query.isVisible === 'true',
+  limit: 10
+});
 // 게시판 네임택 색상 동적 매핑
 const boardColorMap = {};
 const boardColors = [
@@ -137,33 +151,26 @@ const boardColors = [
 ];
 let boardColorIndex = 0;
 
-const getBoardColorClass = (boardName) => {
-  if (!boardColorMap[boardName]) {
-    const color = boardColors[boardColorIndex % boardColors.length];
-    boardColorMap[boardName] = color;
-    boardColorIndex++;
+const currentPage = computed(() => Math.floor(searchCondition.offset / searchCondition.limit) + 1);
+const totalPages = computed(() => Math.ceil(totalCount.value / searchCondition.limit));
+const visiblePages = computed(() => {
+  const total = totalPages.value;
+  const current = Math.min(currentPage.value, total);
+  const delta = 2;
+  const pages = [];
+
+  for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) {
+    pages.push(i);
   }
-  return boardColorMap[boardName];
+
+  return pages;
+});
+
+// 2. 함수 정의
+const formatDate = (date) => {
+  return format(new Date(date), 'yyyy-MM-dd HH:mm');
 };
 
-const authStore = useAuthStore();
-const router = useRouter();
-const searchCondition = reactive({
-  boardId: route.params.boardId ? Number(route.params.boardId) : null,
-  offset: route.query.offset ? Number(route.query.offset) : 0,
-  searchKeyword: route.query.searchKeyword || '',
-  searchType: route.query.searchType || null,
-  sort: route.query.sort || 'recent',
-  isVisible: route.query.isVisible === 'true',
-  limit: 10
-});
-const boards = ref([]);
-const totalCount = ref(0);
-const posts = ref([]);
-
-const focusedId = ref(
-  route.query.focusedPostId ? Number(route.query.focusedPostId) : null
-);
 const fetchBoards = async () => {
   try {
     const response = await apiClient.get('/board/list');
@@ -189,7 +196,6 @@ const fetchPosts = async () => {
         boardName: board ? board.boardName : '알 수 없음'
       };
     });
-    totalCount.value = 0;
     totalCount.value = response.data.totalCount;
 
     // offset 유효성 검사 및 보정 후 페이지 이동
@@ -199,12 +205,58 @@ const fetchPosts = async () => {
       goToPage(1);
       return;
     }
+
+    router.replace({
+      query: {
+        ...route.query,
+        offset: searchCondition.offset,
+        searchKeyword: searchCondition.searchKeyword || undefined,
+        searchType: searchCondition.searchType || undefined,
+        isVisible: searchCondition.isVisible ? 'true' : undefined,
+        boardId: searchCondition.boardId || undefined,
+        sort: searchCondition.sort || undefined,
+      }
+    });
   } catch (error) {
     console.error('게시글 목록 조회 실패:', error);
     posts.value = [];
   }
 };
 
+// 페이지 이동
+const goToPage = (page) => {
+  const safePage = Math.min(page, totalPages.value);
+  if (safePage < 1) return;
+  searchCondition.offset = (safePage - 1) * searchCondition.limit;
+  fetchPosts();
+};
+
+// 게시글 상세 내용 보기
+const goToPost = (post) => {
+  const board = boards.value.find(b => b.boardId === post.boardId);
+  const query = {
+    offset: searchCondition.offset,
+    searchKeyword: searchCondition.searchKeyword,
+    searchType: searchCondition.searchType,
+    isVisible: searchCondition.isVisible ? 'true' : 'false',
+  };
+
+  if (searchCondition.boardId) {
+    query.boardId = searchCondition.boardId;
+    query.boardName = board ? board.boardName : null;
+    query.filteredByBoard = 'true';
+  }
+
+  router.push({
+    name: 'PostDetail',
+    params: {
+      postId: post.postId
+    },
+    query
+  });
+};
+
+// 게시글 필터 + 검색 입력 초기화
 const resetSearch = () => {
   searchCondition.boardId = null;
   searchCondition.searchKeyword = '';
@@ -216,67 +268,43 @@ const resetSearch = () => {
   fetchPosts();
 };
 
-const goToPost = (post) => {
-  const board = boards.value.find(b => b.boardId === post.boardId);
-  router.push({
-    name: 'PostDetail',
-    params: {
-      postId: post.postId,
-      boardId: post.boardId,
-    },
-    query: {
-      boardName: board ? board.boardName : null,
-      offset: searchCondition.offset,
-      boardId: searchCondition.boardId,
-      searchKeyword: searchCondition.searchKeyword,
-      searchType: searchCondition.searchType,
-      isVisible: searchCondition.isVisible ? 'true' : 'false',
-    }
-  });
-};
-
-const formatDate = (date) => {
-  return format(new Date(date), 'yyyy-MM-dd HH:mm');
-};
-
-const currentPage = computed(() => Math.floor(searchCondition.offset / searchCondition.limit) + 1);
-const totalPages = computed(() => Math.ceil(totalCount.value / searchCondition.limit));
-
-const goToPage = (page) => {
-  const safePage = Math.min(page, totalPages.value);
-  if (safePage < 1) return;
-  searchCondition.offset = (safePage - 1) * searchCondition.limit;
-  fetchPosts();
-};
-
-const visiblePages = computed(() => {
-  const total = totalPages.value;
-  const current = Math.min(currentPage.value, total);
-  const delta = 2;
-  const pages = [];
-
-  for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) {
-    pages.push(i);
-  }
-
-  return pages;
-});
-
 // 게시글 작성하기
 const goToWritePost = () => {
   if (searchCondition?.boardId) {
     const board = boards.value.find(b => b.boardId === searchCondition.boardId);
     router.push({
       name: 'WritePost',
-      params: { boardId: searchCondition.boardId },
-      query: { boardName: board ? board.boardName : null }
+      query: {
+        boardId: searchCondition.boardId,
+        boardName: board ? board.boardName : null,
+        filteredByBoard: 'true'
+      }
     });
   } else {
     router.push({ name: 'WritePost' });
   }
 };
 
-// offset, searchKeyword, searchType, isVisible 변화 감지
+// 게시판 이름 색깔 입히기
+const getBoardColorClass = (boardName) => {
+  if (!boardColorMap[boardName]) {
+    const color = boardColors[boardColorIndex % boardColors.length];
+    boardColorMap[boardName] = color;
+    boardColorIndex++;
+  }
+  return boardColorMap[boardName];
+};
+
+// 3. 라이프 사이클
+onMounted(async () => {
+  await fetchBoards();
+  if (route.query.filteredByBoard === 'true' && !route.query.boardId) {
+    searchCondition.boardId = null;
+  }
+  await fetchPosts();
+});
+
+// 쿼리에서 필터 + 검색 조건 가져오기
 onBeforeRouteUpdate((to, from, next) => {
   if (to.query.offset !== undefined) {
     searchCondition.offset = Number(to.query.offset);
@@ -290,13 +318,13 @@ onBeforeRouteUpdate((to, from, next) => {
   if (to.query.isVisible !== undefined) {
     searchCondition.isVisible = to.query.isVisible === 'true';
   }
+  if (to.query.boardId !== undefined) {
+    searchCondition.boardId = to.query.boardId ? Number(to.query.boardId) : null;
+  }
+  if (to.query.sort !== undefined) {
+    searchCondition.sort = to.query.sort;
+  }
   next();
-});
-
-
-onMounted(async () => {
-  await fetchBoards();
-  await fetchPosts();
 });
 
 </script>

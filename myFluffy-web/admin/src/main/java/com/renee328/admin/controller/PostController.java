@@ -75,7 +75,10 @@ public class PostController {
     @PostMapping("/write")
     public ResponseEntity<?> writePost(@RequestBody PostDto postDto) {
         postService.writePost(postDto);
-        return ResponseEntity.ok(Map.of("message", "게시글이 작성되었습니다."));
+        return ResponseEntity.ok(Map.of(
+                "message", "게시글이 작성되었습니다.",
+                "postId", postDto.getPostId()
+        ));
     }
 
     // 에디터에 업로드했던 임시 이미지 파일 지우기

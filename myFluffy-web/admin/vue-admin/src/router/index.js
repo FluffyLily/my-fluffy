@@ -47,38 +47,42 @@ const routes = [
     meta: { requiresAuth: true } 
   },
   {
-    path: '/post/:boardId?',
+    path: '/post',
     name: 'PostManagement',
     component: Posts,
+    props: route => ({
+      boardId: route.query.boardId ? Number(route.query.boardId) : null,
+      focusedPostId: route.query.focusedPostId ? Number(route.query.focusedPostId) : null
+    }),
     meta: { requiresAuth: true }
   },
   {
-    path: '/post/write/:boardId?',
+    path: '/post/write',
     name: 'WritePost',
     component: Editor,
     props: route => ({
-      boardId: route.params.boardId ? Number(route.params.boardId) : null,
+      boardId: route.query.boardId ? Number(route.query.boardId) : null,
       boardName: route.query.boardName || null
     }),
     meta: { requiresAuth: true }
   },
   {
-    path: '/post/update/:boardId?/:postId?',
+    path: '/post/update/:postId?',
     name: 'UpdatePost',
     component: Editor,
     props: route => ({
-      boardId: route.params.boardId ? Number(route.params.boardId) : null,
+      boardId: route.query.boardId ? Number(route.query.boardId) : null,
       postId: route.params.postId ? Number(route.params.postId) : null,
       boardName: route.query.boardName || null
     }),
     meta: { requiresAuth: true }
   },
   {
-    path: '/post/detail/:boardId?/:postId?',
+    path: '/post/detail/:postId?',
     name: 'PostDetail',
     component: PostDetail,
     props: route => ({
-      boardId: route.params.boardId ? Number(route.params.boardId) : null,
+      boardId: route.query.boardId ? Number(route.query.boardId) : null,
       postId: route.params.postId ? Number(route.params.postId) : null,
       boardName: route.query.boardName || null
     }),

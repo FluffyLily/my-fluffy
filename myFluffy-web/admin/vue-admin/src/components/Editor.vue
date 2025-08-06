@@ -102,23 +102,21 @@
             </span>
           </div>
         </div>
-        <!-- 정렬 순서 -->
+        <!-- 상단 고정 우선순위 -->
         <div class="form-group">
-          <label>정렬 순서</label>
-          <select v-model="newPost.sortOrder" class="form-control">
-            <option value="null">정렬 순서</option>
-            <option value="1">1순위</option>
-            <option value="2">2순위</option>
-            <option value="3">3순위</option>
+          <label>상단 고정 우선순위</label>
+          <select v-model="newPost.sortOrder" class="form-control" :disabled="!newPost.isPinned">
+            <option :value="null">우선순위</option>
+            <option v-for="n in 3" :key="n" :value="n">{{ n }}순위</option>
           </select>
         </div>
       </div>
     </div>
 
-    <!-- 이전/작성/수정/삭제 버튼 그룹 -->
+    <!-- 취소/작성/수정/삭제하기 버튼 그룹 -->
     <div class="d-flex justify-content-center gap-2 mt-3">
-      <button @click="goToPostDetail" class="btn btn-warning">
-        이전으로
+      <button @click="cancelEdit" class="btn btn-warning">
+        취소하기
       </button>
       <button @click="writePost" :disabled="!canSubmit" class="btn btn-primary">
         {{ props.postId ? '수정하기' : '작성하기' }}
@@ -140,7 +138,7 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label d-block">관리자 비밀번호 확인</label>
-            <input type="password" v-model="deletePassword" class="form-control mb-2" />
+            <input type="password" v-model="deletePassword" class="form-control mb-2" @keyup.enter="deletePassword && deletePost()"/>
             <div v-if="deleteError" class="text-danger mb-3">{{ deleteError }}</div>
           </div>
           <div class="text-danger mb-3">
@@ -163,6 +161,22 @@ import apiClient from '../api/axios.js';
 import { useAuthStore } from '../stores/auth.js';
 import { useRouter, useRoute } from 'vue-router';
 import { hasAnyRole } from '../util/roleUtils.js';
+import { useToast } from 'vue-toastification';
+
+const props = defineProps({
+  postId: {
+    type: Number,
+    default: null
+  },
+  boardId: {
+    type: Number,
+    default: null
+  },
+  boardName: {
+    type: String,
+    default: ''
+  }
+});
 // 이미지 업로드 상태 및 에러 메시지
 const isUploading = ref(false);
 const uploadError = ref('');
@@ -171,22 +185,9 @@ const uploadError = ref('');
 const uploadedImages = ref([]);
 
 const authStore = useAuthStore();
-const router = useRouter();
 const route = useRoute();
-const props = defineProps({
-  boardId: {
-    type: [Number, String],
-    default: null
-  },
-  boardName: {
-    type: String,
-    default: null
-  },
-  postId: {
-    type: [Number, String],
-    default: null
-  }
-})
+const router = useRouter();
+const toast = useToast();
 
 // 게시판 목록과 관련 데이터들
 const boards = ref([])
@@ -209,6 +210,8 @@ const newPost = reactive({
   updatedBy: authStore.userId,
   updatedByName: authStore.loginId
 })
+
+let initialPostData = null;
 
 // ckeditor
 const editor = ref(null)
@@ -347,7 +350,7 @@ const handleKeyDown = (event) => {
 // fuse 설정
 const fuse = computed(() => new Fuse(allTags.value, {
   includeScore: true, // 결과에 유사도 점수를 포함
-  threshold: 0.4, // 0~1 사이: 얼마나 다른 것도 허용할지 - 수치가 낮을 수록 엄격
+  threshold: 0.4, // 0~1 사이: 수치가 낮을 수록 엄격하게 허용함
 }));
 
 const isTagLimitReached = computed(() => newPost.postCategory.length >= 3);
@@ -410,16 +413,13 @@ const fetchBoards = async () => {
 // 게시글 세부내용 조회
 const fetchPost = async () => {
   if (!props.postId) return;
-
   try {
     const response = await apiClient.get(`/post/detail/${props.postId}`);
     Object.assign(newPost, response.data);
-
     // 이미지 정보 유지
     if (response.data.images?.length) {
       newPost.images = response.data.images;
     }
-
     // 태그 복원
     if (!newPost.postCategory && newPost.postCategoryString) {
       newPost.postCategory = newPost.postCategoryString
@@ -429,34 +429,33 @@ const fetchPost = async () => {
     } else if (!newPost.postCategory) {
       newPost.postCategory = [];
     }
+    // 게시글 데이터 초기값 저장 (수정 감지용)
+    initialPostData = JSON.parse(JSON.stringify(newPost));
   } catch (error) {
     console.error('게시글 세부내용 조회 실패: ', error);
   }
 }
 
-// 보던 게시글 상세로 돌아가기
-const goToPostDetail = () => {
-  router.push({
-    name: 'PostDetail',
-    params: { postId: props.postId },
-    query: {
-      boardId: route.query.boardId,
-      boardName: route.query.boardName,
-      offset: route.query.offset,
-      searchKeyword: route.query.searchKeyword,
-      searchType: route.query.searchType,
-      sort: route.query.sort,
-      isVisible: route.query.isVisible
-    }
-  });
-};
+const cancelEdit = () => {
+    router.push({
+      name: 'PostManagement',
+      query: {
+        ...route.query,
+        focusedPostId: newPost.postId
+      }
+    })
+  }
 
-// 게시글 작성하기
+// 게시글 작성 & 수정
 const writePost = async () => {
   if (!canSubmit.value) return;
 
   const board = boards.value.find(b => b.boardId === newPost.boardId);
   newPost.boardCategoryId = board ? board.boardCategoryId : null;
+
+  if (!newPost.isPinned) {
+    newPost.sortOrder = null;
+  }
 
   // 이미지 URL 추출 후, 본문 내 이미지가 하나라도 있으면 images를 덮어씀
   const currentImages = extractImageUrls(newPost.content);
@@ -466,10 +465,10 @@ const writePost = async () => {
 
   if (props.postId) {
     if (!confirm("게시글을 수정하시겠습니까?")) return;
-    try {
-      const response = await apiClient.put(`/post/update/${props.postId}`, newPost);
-      console.log('게시글 수정 성공: ', response.data);
 
+    try {
+      await apiClient.put(`/post/update/${props.postId}`, newPost);
+      
       // 본문에 사용된 이미지와 업로드된 이미지 비교하여 미사용 이미지 삭제
       const usedImages = extractImageUrls(newPost.content);
       const unusedImages = uploadedImages.value.filter((url) => !usedImages.includes(url));
@@ -483,33 +482,31 @@ const writePost = async () => {
       }
       uploadedImages.value = [];
 
+      const query = { edited: 'true' };
+      if (route.query.filteredByBoard === 'true' && route.query.boardId) {
+        query.boardId = newPost.boardId;
+        query.boardName = board?.boardName ?? '';
+        query.filteredByBoard = 'true';
+      }
+
       router.push({
         name: 'PostDetail',
         params: { postId: props.postId },
-        query: {
-          edited: true,
-          boardId: route.query.boardId,
-          boardName: route.query.boardName,
-          offset: route.query.offset,
-          searchKeyword: route.query.searchKeyword,
-          searchType: route.query.searchType,
-          sort: route.query.sort,
-          isVisible: route.query.isVisible
-        }
+        query,
+        replace: true
       });
+
     } catch (error) {
       console.error('게시글 수정 실패: ', error);
     }
   } else {
     if (!confirm("새로운 게시글을 작성하시겠습니까?")) return;
+
     try {
       const response = await apiClient.post('/post/write', newPost);
-      console.log('게시글 작성 성공: ', response.data);
-
       // 본문에 사용된 이미지와 업로드된 이미지 비교하여 미사용 이미지 삭제
       const usedImages = extractImageUrls(newPost.content);
       const unusedImages = uploadedImages.value.filter((url) => !usedImages.includes(url));
-
       if (unusedImages.length > 0) {
         try {
           await apiClient.post('/post/cleanup-temp', unusedImages);
@@ -517,10 +514,22 @@ const writePost = async () => {
           console.warn('사용되지 않은 이미지 삭제 실패:', cleanupErr);
         }
       }
-
       uploadedImages.value = [];
 
-      router.push({ name: 'PostManagement' });
+      const query = { edited: 'true' };
+      if (route.query.filteredByBoard === 'true' && route.query.boardId) {
+        query.boardId = newPost.boardId;
+        query.boardName = board?.boardName ?? '';
+        query.filteredByBoard = 'true';
+      }
+
+      router.push({
+        name: 'PostDetail',
+        params: { postId: response.data.postId },
+        query,
+        replace: true
+      });
+
     } catch (error) {
       console.error('게시글 작성 실패: ', error);
     }
@@ -590,7 +599,16 @@ const deletePost = async () => {
         });
         showDeletePostModal.value = false;
         deletePassword.value = '';
-        router.push({ name: 'PostManagement' });
+        router.push({
+          name: 'PostManagement',
+          query: route.query.filteredByBoard === 'true' && route.query.boardId
+            ? {
+                boardId: route.query.boardId,
+                boardName: route.query.boardName,
+                filteredByBoard: 'true',
+              }
+            : {}
+        });
     } else {
         deleteError.value = '비밀번호가 일치하지 않습니다.';
     }
@@ -598,18 +616,23 @@ const deletePost = async () => {
     console.error('게시글을 삭제하지 못함: ', error);
     deleteError.value = '게시글 삭제 중 문제가 발생했습니다. 다시 시도해 주세요.';
   }
-
 }
 
 onMounted(async () => {
   editor.value = window.ClassicEditor
   await fetchBoards();
-
   if (props.postId) {
     await fetchPost();
   }
-
   await fetchTags();
+
+  // 작성/수정 성공 후 edited 쿼리 감지 & 토스트 후 쿼리 제거
+  if (route.query.edited) {
+    toast.success('게시글이 성공적으로 작성되었습니다.');
+
+    const { edited, ...restQuery } = route.query;
+    router.replace({ query: restQuery });
+  }
 })
 
 </script>

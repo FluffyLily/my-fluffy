@@ -6,6 +6,7 @@ import java.util.List;
 public class PostDto {
     private Long postId; // 게시물_순번
     private Long boardId; // 게시판_아이디
+    private String boardName; // 게시판_이름
     private Long boardCategoryId; // 게시판_카테고리_아이디
     private String title; // 게시물_제목
     private String content; // 게시물_내용
@@ -38,6 +39,14 @@ public class PostDto {
 
     public void setBoardId(Long boardId) {
         this.boardId = boardId;
+    }
+
+    public String getBoardName() {
+        return boardName;
+    }
+
+    public void setBoardName(String boardName) {
+        this.boardName = boardName;
     }
 
     public Long getBoardCategoryId() {

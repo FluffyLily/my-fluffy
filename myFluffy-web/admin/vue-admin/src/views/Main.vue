@@ -45,11 +45,12 @@
 
       <div class="card activity-card">
         <h3><span class="emoji-text">🆕</span> 최근 가입 회원</h3>
-        <ul>
+        <ul v-if="recentUsers.length > 0">
           <li v-for="(user, index) in recentUsers" :key="index">
             <span class="emoji-text">👤</span> {{ user.loginId }} - {{ formatDate(user.createdAt) }}
           </li>
         </ul>
+        <p v-else class="empty-message">아직 가입한 회원이 없습니다.</p>
       </div>
     </div>
 
@@ -290,6 +291,17 @@ onMounted(() => {
   flex: 1;
 }
 
+.activity-card p.empty-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
+  margin: 0;
+  text-align: center;
+  font-style: italic;
+  color: var(--text-color);
+}
+
 .activity-card ul {
   padding-left: 1rem;
   margin-top: 0.5rem;
@@ -320,6 +332,10 @@ onMounted(() => {
 
 .quick-action-card {
   margin-bottom: 2rem;
+}
+
+.emoji-text {
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
 }
 
 .quick-buttons {
@@ -367,10 +383,6 @@ onMounted(() => {
 
 .btn-notice:hover {
   background-color: var(--highlight-yellow);
-}
-
-.emoji-text {
-  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
 }
 
 </style>

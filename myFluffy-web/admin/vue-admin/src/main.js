@@ -4,6 +4,8 @@ import { createPinia } from 'pinia';
 import './style.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
+import 'vue-toastification/dist/index.css';
+import Toast from 'vue-toastification';
 // Font Awesome 관련 설정
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faHome, faUser, faBell, faPlus, faUsersCog, faThList, faFileAlt } from '@fortawesome/free-solid-svg-icons'
@@ -17,6 +19,13 @@ library.add(faHome, faUser, faBell, faPlus, faUsersCog, faThList, faFileAlt)
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)
+const toastOptions = {
+  position: 'top-right',
+  timeout: 3000,
+  closeOnClick: true,
+  pauseOnHover: true
+};
+app.use(Toast, toastOptions);
 app.component('ckeditor', Ckeditor)
 app.component('font-awesome-icon', FontAwesomeIcon)
 app.mount('#app')

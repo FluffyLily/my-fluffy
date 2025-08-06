@@ -1,7 +1,7 @@
 <template>
     <div class="post-detail-wrapper">
         <div class="board-header">
-            <h2 class="board-name">{{ boardName }}</h2>
+            <h2 class="board-name">{{ post?.boardName || '게시판 없음' }}</h2>
             <button class="btn-edit" v-if="canEdit" @click="goToEdit">수정하기</button>
         </div>
         <h1 class="post-title">{{ post.title }}</h1>
@@ -30,7 +30,7 @@
             <div class="modal-body">
             <div class="mb-3">
                 <label class="form-label d-block">관리자 비밀번호 확인</label>
-                <input type="password" v-model="deletePassword" class="form-control mb-2" />
+                <input type="password" v-model="deletePassword" class="form-control mb-2" @keyup.enter="deletePassword && deletePost()"/>
                 <div v-if="deleteError" class="text-danger mb-3">{{ deleteError }}</div>
             </div>
             <div class="text-danger mb-3">
@@ -53,24 +53,28 @@ import apiClient from '../api/axios.js';
 import { format } from 'date-fns';
 import { useAuthStore } from '../stores/auth.js';
 import { hasAnyRole } from '../util/roleUtils.js';
+import { useToast } from 'vue-toastification';
 
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
 const authStore = useAuthStore();
-const { boardId, postId, boardName } = defineProps({
-    boardId: {
-        type: [String, Number],
-        default: null
-    },
+const props = defineProps({
     postId: {
         type: [String, Number],
-        default: null
+        required: true
+    },
+    boardId: {
+        type: [String, Number],
+        required: false
     },
     boardName: {
         type: String,
-        default: ''
+        required: false
     }
 });
+
+const postId = props.postId;
 const post = ref({});
 const postTags = ref([]);
 
@@ -115,7 +119,9 @@ const fetchPost = async () => {
         const response = await apiClient.get(`/post/detail/${postId}`);
         post.value = response.data;
         if (response.data.postCategoryString) {
-        postTags.value = response.data.postCategoryString.split(',').map(tag => tag.trim());
+            postTags.value = response.data.postCategoryString.split(',').map(tag => tag.trim());
+        } else {
+            postTags.value = [];
         }
     } catch (e) {
         console.error('게시글 조회 실패', e);
@@ -124,35 +130,36 @@ const fetchPost = async () => {
 
 // 보던 게시글 목록으로 돌아가기
 const goToPostList = () => {
+    const query = {};
+    if (route.query.filteredByBoard === 'true' && route.query.boardId) {
+        query.boardId = route.query.boardId;
+        query.boardName = route.query.boardName;
+        query.filteredByBoard = 'true';
+    }
     router.push({
         name: 'PostManagement',
-        params: { boardId: route.query.boardId },
-        query: {
-            offset: route.query.offset,
-            boardId: route.query.boardId,
-            boardName: route.query.boardName,
-            searchKeyword: route.query.searchKeyword,
-            searchType: route.query.searchType,
-            sort: route.query.sort,
-            isVisible: route.query.isVisible,
-        }
+        query
     });
 };
 
 // 수정하기 에디터 이동
 const goToEdit = () => {
+    const query = {};
+    if (route.query.filteredByBoard === 'true' && route.query.boardId) {
+        query.boardId = route.query.boardId;
+        query.boardName = route.query.boardName;
+        query.filteredByBoard = 'true';
+    }
     router.push({
         name: 'UpdatePost',
         params: {
             postId,
-            boardId: route.params.boardId
         },
-        query: {
-            boardName: route.query.boardName || null
-        }
+        query
     });
 };
 
+// 게시글 삭제하기
 const deletePost = async () => {
     if (!deletePassword.value.trim()) {
         deleteError.value = '관리자 비밀번호를 입력하세요.';
@@ -174,10 +181,20 @@ const deletePost = async () => {
             });
             showDeletePostModal.value = false;
             deletePassword.value = '';
-            router.push({ name: 'PostManagement' });
+            router.push({
+                name: 'PostManagement',
+                query: route.query.filteredByBoard === 'true' && route.query.boardId
+                    ? {
+                        boardId: route.query.boardId,
+                        boardName: route.query.boardName,
+                        filteredByBoard: 'true',
+                    }
+                    : {}
+            });
         } else {
             deleteError.value = '비밀번호가 일치하지 않습니다.';
         }
+
     } catch (error) {
         console.error('게시글을 삭제하지 못함: ', error);
         deleteError.value = '게시글 삭제 중 문제가 발생했습니다. 다시 시도해 주세요.';
@@ -194,11 +211,14 @@ onMounted(() => {
     if (postId) {
         fetchPost();
     } else {
-        console.warn('postId가 없어 게시글 상세 조회를 할 수 없음.');
+        console.warn('postId가 없어 게시글 상세 조회를 할 수 없습니다.');
     }
 
     if (route.query.edited) {
-        alert('게시글이 성공적으로 수정되었습니다.');
+        toast.success('게시글이 성공적으로 작성되었습니다.');
+
+        const { edited, ...restQuery } = route.query;
+        router.replace({ query: restQuery });
     }
 });
 </script>
