@@ -26,7 +26,7 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 
-// 권한에 따른 메뉴 필터링
+// 권한 별 메뉴 활성/비활성
 const filteredMenuItems = computed(() => {
   const userRole = authStore.roleId;
   const menu = [
@@ -38,7 +38,6 @@ const filteredMenuItems = computed(() => {
     { name: '시스템 공지', path: '/notice', roles: ['ROLE_ADMIN', 'ROLE_SUPER_ADMIN'], icon: faBell }
   ];
 
-  // 권한 체크하여 메뉴 필터링
   return menu.filter(item => {
     return !item.roles || hasAnyRole(userRole, item.roles);
   });

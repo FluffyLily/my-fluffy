@@ -50,42 +50,16 @@ const router = useRouter();
 const authStore = useAuthStore();
 const showProfileModal = ref(false);
 
-// 프로필 수정 데이터
 const profileForm = ref({
   loginId: authStore.loginId,
   currentPassword: '',
   loginPassword: '',
   updatedBy: authStore.userId
 });
+
 const confirmNewPassword = ref('');
 const passwordError = ref('');
 const currentPasswordError = ref('');
-
-// 수정 모달 초기화
-watch(showProfileModal, (newVal) => {
-  if (!newVal) {
-    // 모달이 닫힐 때 입력값들을 초기화
-    profileForm.value.currentPassword = '';  // 현재 비밀번호 초기화
-    profileForm.value.loginPassword = '';    // 새 비밀번호 초기화
-    confirmNewPassword.value = '';           // 비밀번호 확인 초기화
-    currentPasswordError.value = '';         // 현재 비밀번호 오류 메시지 초기화
-    passwordError.value = '';                // 새 비밀번호 오류 메시지 초기화
-  } else {
-    profileForm.value.loginId = authStore.loginId;
-  }
-});
-// 비밀번호 유효성 검사
-watch(() => profileForm.value.loginPassword, async (newPassword) => {
-  if (newPassword) {
-    passwordError.value = await validatePassword(newPassword);
-  } else {
-    passwordError.value = "";
-  }
-});
-// 현재 비밀번호 오류 메시지 초기화
-watch(() => profileForm.value.currentPassword, () => {
-  currentPasswordError.value = '';
-});
 
 const passwordMismatch = computed(() => 
   profileForm.value.loginPassword !== confirmNewPassword.value &&
@@ -147,6 +121,31 @@ const logout = async () => {
     console.error("로그아웃 실패: ", error);
   }
 };
+
+watch(showProfileModal, (newVal) => {
+  if (!newVal) {
+    // 모달이 닫힐 때 입력값들을 초기화
+    profileForm.value.currentPassword = '';  // 현재 비밀번호 초기화
+    profileForm.value.loginPassword = '';    // 새 비밀번호 초기화
+    confirmNewPassword.value = '';           // 비밀번호 확인 초기화
+    currentPasswordError.value = '';         // 현재 비밀번호 오류 메시지 초기화
+    passwordError.value = '';                // 새 비밀번호 오류 메시지 초기화
+  } else {
+    profileForm.value.loginId = authStore.loginId;
+  }
+});
+
+watch(() => profileForm.value.loginPassword, async (newPassword) => {
+  if (newPassword) {
+    passwordError.value = await validatePassword(newPassword);
+  } else {
+    passwordError.value = "";
+  }
+});
+
+watch(() => profileForm.value.currentPassword, () => {
+  currentPasswordError.value = '';
+});
 </script>
 
 <style lang="scss" scoped>

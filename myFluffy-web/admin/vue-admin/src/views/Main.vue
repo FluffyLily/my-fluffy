@@ -55,8 +55,8 @@
     </div>
 
     <div class="card chart-card">
-      <h3><span class="emoji-text">📈</span> 시스템 활동 추이 (최근 7일)</h3>
-      <p>차트 영역 (게시글 등록 추이)</p>
+      <h3><span class="emoji-text">📈</span> 시스템 활동 (최근 7일)</h3>
+      <p>차트 영역 (게시글 등록 건수)</p>
       <WeeklyPostChart :labels="chartLabels" :counts="chartCounts" />
     </div>
 
@@ -80,11 +80,29 @@ import { format } from 'date-fns';
 import apiClient from '../api/axios';
 import WeeklyPostChart from '../components/WeeklyPostChart.vue'
 import NoticeModal from '../components/NoticeModal.vue';
-// 시스템 공지 (최근 공지)
+
+const router = useRouter();
+const authStore = useAuthStore();
+
 const recentNotice = ref(null);
 const showNoticeModal = ref(false);
 
-// 시스템 공지 (최근 공지) 가져오기
+const recentPosts = ref([]);
+const recentUsers = ref([]);
+const boardCount = ref(0);
+const postSummary = ref({ totalCount: 0, todayCount: 0 });
+const adminCount = ref(0);
+const userSummary = ref({ totalCount: 0, weeklyCount: 0 });
+
+const weeklyPostData = ref({ labels: [], counts: [] });
+const chartLabels = computed(() => weeklyPostData.value.labels);
+const chartCounts = computed(() => weeklyPostData.value.counts);
+
+const formatDate = (date) => {
+  return format(new Date(date), 'yyyy-MM-dd');
+};
+
+// 최근 공지 조회
 const fetchRecentNotice = async () => {
   try {
     const response = await apiClient.get('/notice/dashboard');
@@ -101,30 +119,7 @@ const openNoticeModal = () => {
   }
 };
 
-const router = useRouter();
-const authStore = useAuthStore();
-const recentPosts = ref([]);
-const recentUsers = ref([]);
-const boardCount = ref(0);
-const postSummary = ref({ totalCount: 0, todayCount: 0 });
-const adminCount = ref(0);
-const userSummary = ref({ totalCount: 0, weeklyCount: 0 });
-const formatDate = (date) => {
-  return format(new Date(date), 'yyyy-MM-dd');
-};
-const weeklyPostData = ref({ labels: [], counts: [] })
-const chartLabels = computed(() => weeklyPostData.value.labels)
-const chartCounts = computed(() => weeklyPostData.value.counts)
-const fetchWeeklyPostStats = async () => {
-  try {
-    const response = await apiClient.get('/post/weekly-count')
-    weeklyPostData.value.labels = response.data.map(item => item.postDate)
-    weeklyPostData.value.counts = response.data.map(item => item.count)
-  } catch (e) {
-    console.error('주간 게시글 통계 조회 실패:', e)
-  }
-}
-
+// 대시보드 통계 조회
 const fetchDashboardStats = async () => {
   try {
     const [boardRes, postRes, adminRes, userRes] = await Promise.all([
@@ -142,6 +137,7 @@ const fetchDashboardStats = async () => {
   }
 }
 
+// 최근 게시글 목록 조회
 const fetchRecentPosts = async () => {
   try {
     const response = await apiClient.post('/post/list', {
@@ -162,6 +158,7 @@ const fetchRecentPosts = async () => {
   }
 }
 
+// 최근 회원 목록 조회
 const fetchRecentUsers = async () => {
   try {
     const response = await apiClient.post('/user/list', {
@@ -181,6 +178,18 @@ const fetchRecentUsers = async () => {
   }
 }
 
+// 주간 게시글 통계
+const fetchWeeklyPostStats = async () => {
+  try {
+    const response = await apiClient.get('/post/weekly-count')
+    weeklyPostData.value.labels = response.data.map(item => item.postDate)
+    weeklyPostData.value.counts = response.data.map(item => item.count)
+  } catch (e) {
+    console.error('주간 게시글 통계 조회 실패:', e)
+  }
+}
+
+// 빠른 작업 이동
 const goToBoard = () => {
   router.push({ name: 'Board' })
 }

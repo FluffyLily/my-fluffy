@@ -28,12 +28,12 @@ import apiClient from "../api/axios";
 import { useAuthStore } from '../stores/auth';
 import { jwtDecode } from 'jwt-decode';
 
-const router = useRouter()
-const username = ref('')
-const password = ref('')
-const errorMessage = ref('')
-const isLoading = ref(false);
+const router = useRouter();
 const authStore = useAuthStore();
+const username = ref('');
+const password = ref('');
+const errorMessage = ref('');
+const isLoading = ref(false);
 
 const handleLogin = async () => {
   const success = await login();
@@ -85,21 +85,6 @@ const login = async () => {
     isLoading.value = false;
   }
 };
-
-onMounted(async() => {
-  const params = new URLSearchParams(window.location.search);
-  const demo = params.get('demo');
-
-  if (demo === 'admin') {
-    username.value = 'demo-admin';
-    password.value = '1234qwer!';
-    await handleLogin();
-  } else if (demo === 'manager') {
-    username.value = 'demo-manager';
-    password.value = '1234qwer!';
-    await handleLogin();
-  }
-});
 </script>
 
 <style lang="scss" scoped>

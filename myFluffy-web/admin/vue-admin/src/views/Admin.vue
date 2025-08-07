@@ -1,274 +1,3 @@
-<script setup>
-import { ref, onMounted, computed, watch } from 'vue';
-import apiClient from '../api/axios.js';
-import { format } from 'date-fns';
-import { useAuthStore } from '../stores/auth';
-import { validatePassword } from '../util/passwordValidation.js';
-import { validateUsername } from '../util/usernameValidation.js';
-import { getRoleLevel, useCurrentUserRoleLevel, useAvailableRoles } from '../util/roleUtils.js';
-
-const authStore = useAuthStore();
-const admins = ref([]);
-const loading = ref(true);
-const showCreateModal = ref(false);
-const showEditModal = ref(false);
-const showDeleteModal = ref(false);
-const availableRoles = useAvailableRoles(authStore);
-const currentUserRoleLevel = useCurrentUserRoleLevel(authStore);
-const isAdmin = computed(() => authStore.roleId === 'ROLE_ADMIN' || authStore.roleId === 'ROLE_SUPER_ADMIN');
-const deletePassword = ref('');
-const deleteUserId = ref(null);
-const deleteLoginId = ref(null);
-const deleteError = ref('');
-
-// 역할별 고정 색상 네임택 클래스 매핑
-const roleColorMap = {};
-const roleColors = ['role-tag--yellow', 'role-tag--purple', 'role-tag--mint'];
-let roleColorIndex = 0;
-const getRoleColorClass = (roleId) => {
-  if (!roleColorMap[roleId]) {
-    const color = roleColors[roleColorIndex % roleColors.length];
-    roleColorMap[roleId] = color;
-    roleColorIndex++;
-  }
-  return roleColorMap[roleId];
-};
-
-// 권한 비교 함수들
-// 'demo-xxx' 계정 (테스트용)
-const isDemoUser = authStore.loginId?.startsWith('demo-');
-
-// 수정 가능 권한 함수
-const canEdit = (targetAdmin) => {
-  const targetLevel = getRoleLevel(targetAdmin.roleId);
-  const currentLevel = currentUserRoleLevel.value;
-
-  // 자기 자신은 권한 변경 불가
-  if (authStore.loginId === targetAdmin.loginId) return false;
-
-  // demo 계정이고, 수정 대상이 demo- 또는 sample-이 아닌 경우 제한
-  if (isDemoUser && !(targetAdmin.loginId.startsWith('demo-') || targetAdmin.loginId.startsWith('sample-'))) return false;
-
-  // 본인보다 낮거나 같은 등급은 수정 가능
-  return currentLevel >= targetLevel;
-};
-// 삭제 가능 권한 함수
-const canDelete = (targetAdmin) => {
-  const targetLevel = getRoleLevel(targetAdmin.roleId);
-  const currentLevel = currentUserRoleLevel.value;
-
-  // 자기 자신 삭제 불가
-  if (authStore.loginId === targetAdmin.loginId) return false;
-
-  // 최고 관리자만 삭제 가능
-  if (authStore.roleId !== 'ROLE_SUPER_ADMIN') return false;
-
-  // 자신보다 낮은 권한만 삭제 가능
-  return currentLevel > targetLevel;
-};
-
-const canEditOrDelete = (targetAdmin) => {
-  return canEdit(targetAdmin) || canDelete(targetAdmin);
-};
-
-// 관리자 계정 등록 데이터
-const newAdmin = ref({
-  loginId: '',
-  loginPassword: '',
-  roleId: '',
-  isActive: true,
-  createdBy: authStore.userId,
-  createdAt: '',
-  updatedBy: authStore.userId,
-  updatedAt: '',
-  isInitialized: false
-});
-// 관리자 계정 수정 데이터
-const editForm = ref({ 
-  userId: null,
-  loginId: '',
-  roleId: '', 
-  isActive: true, 
-  updatedBy: authStore.userId,
-  updatedAt: ''
-});
-
-// 아이디 중복 확인 메시지 저장
-const loginIdError = ref('');
-const isValidLoginId = computed(() => !loginIdError.value || loginIdError.value === "사용 가능한 아이디입니다.");
-
-watch(() => newAdmin.value.loginId, async (newLoginId) => {
-  if (newLoginId) {
-    loginIdError.value = await validateUsername(newLoginId);
-  } else {
-    loginIdError.value = "";
-  }
-});
-
-// 비밀번호 확인 입력 값 저장
-const confirmPassword = ref('');
-// 비밀번호 유효성 검사 오류 메시지 저장
-const passwordError = ref('');
-const passwordMismatch = computed(() => newAdmin.value.loginPassword !== confirmPassword.value && confirmPassword.value.length > 0)
-
-watch(() => newAdmin.value.loginPassword, async (newPassword) => {
-  if (newPassword) {
-    passwordError.value = await validatePassword(newPassword);
-  } else {
-    passwordError.value = "";
-  }
-});
-
-// 입력 필드가 모두 올바르게 입력되었는지 확인
-const isFormValid = computed(() => {
-  return (
-    newAdmin.value.loginId.trim() !== '' &&
-    newAdmin.value.loginPassword.trim() !== '' &&
-    confirmPassword.value.trim() !== '' &&
-    newAdmin.value.roleId !== ''
-  );
-});
-
-// 관리자 등록 모달 입력필드 초기화
-watch(showCreateModal, (newVal) => {
-  if (!newVal) {
-    resetNewAdminForm();
-  }
-});
-
-const resetNewAdminForm = () => {
-  newAdmin.value = {
-    loginId: '',
-    loginPassword: '',
-    roleId: '',
-    isActive: true,
-    createdBy: authStore.userId,
-    createdAt: '',
-    updatedBy: authStore.userId,
-    updatedAt: '',
-    isInitialized: false
-  };
-  confirmPassword.value = '';
-  loginIdError.value = '';
-  passwordError.value = '';
-};
-
-// 날짜 포맷팅
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
-  try {
-    return format(new Date(dateString), 'yyyy-MM-dd HH:mm:ss');
-  } catch (error) {
-    return 'Invalid Date';
-  }
-};
-// 오늘 날짜를 ISO 형식으로 변환
-const currentDate = new Date().toISOString();
-
-// 서버 통신 함수들
-// 관리자 목록 불러오기
-const fetchAdmins = async () => {
-  try {
-    const response = await apiClient.get('/admin/list', {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
-    });
-    admins.value = response.data;
-  } catch (error) {
-    console.error("Error response:", error.response);
-  } finally {
-    loading.value = false;
-  }
-};
-
-// 관리자 새로 등록하기
-const createAdmin = async () => {
-
-  if (confirm("새로운 관리자 계정을 생성하시겠습니까?")) {
-  newAdmin.value.createdAt = new Date().toISOString();;
-  newAdmin.value.updatedAt = new Date().toISOString();;
-  
-  await apiClient.post('/admin/create', newAdmin.value, {
-    headers: { Authorization: `Bearer ${authStore.accessToken}` }
-  });
-  showCreateModal.value = false;
-  fetchAdmins();
-  }
-};
-
-// 관리자 계정 수정 모달 열기
-const openEditModal = (admin) => {
-  editForm.value = { 
-    userId: admin.userId,
-    loginId: admin.loginId,
-    roleId: admin.roleId,
-    isActive: admin.isActive,
-    updatedAt: new Date().toISOString(),
-    updatedBy: authStore.userId
-  };
-  showEditModal.value = true;
-};
-// 관리자 계정 수정
-const updateAdmin = async () => {
-  if (confirm("수정사항을 반영하시겠습니까?")) {
-    await apiClient.put(`/admin/update/${editForm.value.userId}`, editForm.value, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
-    });
-    showEditModal.value = false;
-    fetchAdmins();
-  }
-};
-// 관리자 계정 삭제 모달 열기
-const openDeleteModal = (admin) => {
-  deleteUserId.value = admin.userId;
-  deleteLoginId.value = admin.loginId;
-  showDeleteModal.value = true;
-};
-
-// 관리자 삭제 모달 비밀번호 에러 메시지 초기화
-watch(showDeleteModal, (newVal) => {
-  if (!newVal) {
-    deleteError.value = '';
-  }
-});
-
-// 사용자가 비밀번호 입력을 다시 시작하면 에러 메시지 제거
-watch(deletePassword, () => {
-  deleteError.value = '';
-});
-
-// 관리자 계정 삭제
-const deleteAdmin = async () => {
-  try {
-    const response = await apiClient.post('/admin/verify-password', {
-      username: authStore.loginId, 
-      password: deletePassword.value 
-    }, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` } 
-    });
-
-    if (response.data.success) {
-      await apiClient.delete(`/admin/delete/${deleteUserId.value}`, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        params: { 
-          deleterId: authStore.loginId,
-          deletedId: deleteLoginId.value
-        }
-      });
-      fetchAdmins();
-      showDeleteModal.value = false;
-      deletePassword.value = '';
-    } else {
-      deleteError.value = '비밀번호가 일치하지 않습니다.';
-    }
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-// 초기 데이터 로딩
-onMounted(fetchAdmins);
-</script>
-
 <template>
   <div class="page-wrapper">
     <div class="page-container">
@@ -441,6 +170,283 @@ onMounted(fetchAdmins);
     </div>
   </div>
 </template>
+
+<script setup>
+import { ref, onMounted, computed, watch } from 'vue';
+import apiClient from '../api/axios.js';
+import { format } from 'date-fns';
+import { useAuthStore } from '../stores/auth';
+import { validatePassword } from '../util/passwordValidation.js';
+import { validateUsername } from '../util/usernameValidation.js';
+import { getRoleLevel, useCurrentUserRoleLevel, useAvailableRoles } from '../util/roleUtils.js';
+
+const authStore = useAuthStore();
+const admins = ref([]);
+const loading = ref(true);
+
+const showCreateModal = ref(false);
+const showEditModal = ref(false);
+const showDeleteModal = ref(false);
+
+const deletePassword = ref('');
+const deleteUserId = ref(null);
+const deleteLoginId = ref(null);
+const deleteError = ref('');
+
+const availableRoles = useAvailableRoles(authStore);
+const currentUserRoleLevel = useCurrentUserRoleLevel(authStore);
+
+const isAdmin = computed(() => 
+  authStore.roleId === 'ROLE_ADMIN' || authStore.roleId === 'ROLE_SUPER_ADMIN'
+);
+
+// 역할별 고정 색상 네임택 클래스 매핑
+const roleColorMap = {};
+const roleColors = ['role-tag--yellow', 'role-tag--purple', 'role-tag--mint'];
+let roleColorIndex = 0;
+
+// 관리자 계정 등록 폼
+const newAdmin = ref({
+  loginId: '',
+  loginPassword: '',
+  roleId: '',
+  isActive: true,
+  createdBy: authStore.userId,
+  createdAt: '',
+  updatedBy: authStore.userId,
+  updatedAt: '',
+  isInitialized: false
+});
+// 관리자 계정 수정 폼
+const editForm = ref({ 
+  userId: null,
+  loginId: '',
+  roleId: '', 
+  isActive: true, 
+  updatedBy: authStore.userId,
+  updatedAt: ''
+});
+
+// 아이디 중복 검사
+const loginIdError = ref('');
+const isValidLoginId = computed(() => 
+  !loginIdError.value || loginIdError.value === "사용 가능한 아이디입니다."
+);
+
+// 비밀번호 확인
+const confirmPassword = ref('');
+const passwordError = ref('');
+const passwordMismatch = computed(() =>
+  newAdmin.value.loginPassword !== confirmPassword.value && confirmPassword.value.length > 0
+);
+
+// 폼 유효성 검사
+const isFormValid = computed(() => {
+  return (
+    newAdmin.value.loginId.trim() !== '' &&
+    newAdmin.value.loginPassword.trim() !== '' &&
+    confirmPassword.value.trim() !== '' &&
+    newAdmin.value.roleId !== ''
+  );
+});
+
+// 함수 정의
+const getRoleColorClass = (roleId) => {
+  if (!roleColorMap[roleId]) {
+    const color = roleColors[roleColorIndex % roleColors.length];
+    roleColorMap[roleId] = color;
+    roleColorIndex++;
+  }
+  return roleColorMap[roleId];
+};
+
+// 권한 비교 함수들
+// 'demo-xxx' 계정 (테스트용)
+const isDemoUser = authStore.loginId?.startsWith('demo-');
+
+// 수정 가능 권한 함수
+const canEdit = (targetAdmin) => {
+  const targetLevel = getRoleLevel(targetAdmin.roleId);
+  const currentLevel = currentUserRoleLevel.value;
+
+  if (authStore.loginId === targetAdmin.loginId) return false;
+  if (isDemoUser && !(targetAdmin.loginId.startsWith('demo-') || targetAdmin.loginId.startsWith('sample-'))) return false;
+
+  return currentLevel >= targetLevel;
+};
+
+// 삭제 가능 권한 함수
+const canDelete = (targetAdmin) => {
+  const targetLevel = getRoleLevel(targetAdmin.roleId);
+  const currentLevel = currentUserRoleLevel.value;
+
+  if (authStore.loginId === targetAdmin.loginId) return false;
+  if (authStore.roleId !== 'ROLE_SUPER_ADMIN') return false;
+
+  return currentLevel > targetLevel;
+};
+
+const canEditOrDelete = (targetAdmin) => {
+  return canEdit(targetAdmin) || canDelete(targetAdmin);
+};
+
+// 날짜 포맷팅
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  try {
+    return format(new Date(dateString), 'yyyy-MM-dd HH:mm:ss');
+  } catch (error) {
+    return 'Invalid Date';
+  }
+};
+
+const resetNewAdminForm = () => {
+  newAdmin.value = {
+    loginId: '',
+    loginPassword: '',
+    roleId: '',
+    isActive: true,
+    createdBy: authStore.userId,
+    createdAt: '',
+    updatedBy: authStore.userId,
+    updatedAt: '',
+    isInitialized: false
+  };
+  confirmPassword.value = '';
+  loginIdError.value = '';
+  passwordError.value = '';
+};
+
+// 서버 통신 함수들
+// 관리자 목록 불러오기
+const fetchAdmins = async () => {
+  try {
+    const response = await apiClient.get('/admin/list', {
+      headers: { Authorization: `Bearer ${authStore.accessToken}` }
+    });
+    admins.value = response.data;
+  } catch (error) {
+    console.error("Error response:", error.response);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 관리자 새로 등록하기
+const createAdmin = async () => {
+
+  if (confirm("새로운 관리자 계정을 생성하시겠습니까?")) {
+  newAdmin.value.createdAt = new Date().toISOString();;
+  newAdmin.value.updatedAt = new Date().toISOString();;
+  
+  await apiClient.post('/admin/create', newAdmin.value, {
+    headers: { Authorization: `Bearer ${authStore.accessToken}` }
+  });
+  showCreateModal.value = false;
+  fetchAdmins();
+  }
+};
+
+// 관리자 계정 수정 모달 열기
+const openEditModal = (admin) => {
+  editForm.value = { 
+    userId: admin.userId,
+    loginId: admin.loginId,
+    roleId: admin.roleId,
+    isActive: admin.isActive,
+    updatedAt: new Date().toISOString(),
+    updatedBy: authStore.userId
+  };
+  showEditModal.value = true;
+};
+
+// 관리자 계정 수정
+const updateAdmin = async () => {
+  if (confirm("수정사항을 반영하시겠습니까?")) {
+    await apiClient.put(`/admin/update/${editForm.value.userId}`, editForm.value, {
+      headers: { Authorization: `Bearer ${authStore.accessToken}` }
+    });
+    showEditModal.value = false;
+    fetchAdmins();
+  }
+};
+
+// 관리자 계정 삭제 모달 열기
+const openDeleteModal = (admin) => {
+  deleteUserId.value = admin.userId;
+  deleteLoginId.value = admin.loginId;
+  showDeleteModal.value = true;
+};
+
+// 관리자 계정 삭제
+const deleteAdmin = async () => {
+  try {
+    const response = await apiClient.post('/admin/verify-password', {
+      username: authStore.loginId, 
+      password: deletePassword.value 
+    }, {
+      headers: { Authorization: `Bearer ${authStore.accessToken}` } 
+    });
+
+    if (response.data.success) {
+      await apiClient.delete(`/admin/delete/${deleteUserId.value}`, {
+        headers: { Authorization: `Bearer ${authStore.accessToken}` },
+        params: { 
+          deleterId: authStore.loginId,
+          deletedId: deleteLoginId.value
+        }
+      });
+      fetchAdmins();
+      showDeleteModal.value = false;
+      deletePassword.value = '';
+    } else {
+      deleteError.value = '비밀번호가 일치하지 않습니다.';
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+onMounted(fetchAdmins);
+
+// watchers
+// 아이디 중복 확인
+watch(() => newAdmin.value.loginId, async (newLoginId) => {
+  if (newLoginId) {
+    loginIdError.value = await validateUsername(newLoginId);
+  } else {
+    loginIdError.value = "";
+  }
+});
+
+// 비밀번호 유효성 검사
+watch(() => newAdmin.value.loginPassword, async (newPassword) => {
+  if (newPassword) {
+    passwordError.value = await validatePassword(newPassword);
+  } else {
+    passwordError.value = "";
+  }
+});
+
+// 생성 모달 닫힐 때 초기화
+watch(showCreateModal, (newVal) => {
+  if (!newVal) {
+    resetNewAdminForm();
+  }
+});
+
+// 삭제 모달 닫힐 때 에러 문구 초기화
+watch(showDeleteModal, (newVal) => {
+  if (!newVal) {
+    deleteError.value = '';
+  }
+});
+
+// 삭제 비밀번호 입력 시 에러 문구 제거
+watch(deletePassword, () => {
+  deleteError.value = '';
+});
+</script>
 
 <style lang="scss" scoped>
 

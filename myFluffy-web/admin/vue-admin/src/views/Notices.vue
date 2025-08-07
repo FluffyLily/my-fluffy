@@ -135,6 +135,7 @@ import { useAuthStore } from '../stores/auth.js';
 import { format } from 'date-fns';
 
 const authStore = useAuthStore();
+
 const notices = ref([]);
 const totalCount = ref(0);
 
@@ -145,20 +146,12 @@ const searchCondition = reactive({
   searchKeyword: ''
 });
 
-const currentPage = computed(() => Math.floor(searchCondition.offset / searchCondition.limit) + 1);
-const totalPages = computed(() => Math.ceil(totalCount.value / searchCondition.limit));
-
-const goToPage = (page) => {
-  const maxPage = totalPages.value;
-  if (page < 1 || page > maxPage) return;
-
-  const nextOffset = (page - 1) * searchCondition.limit;
-  const maxOffset = Math.max(0, (totalPages.value - 1)) * searchCondition.limit;
-  searchCondition.offset = nextOffset > maxOffset ? 0 : nextOffset;
-
-  fetchNotices();
-};
-
+const currentPage = computed(() => 
+  Math.floor(searchCondition.offset / searchCondition.limit) + 1
+);
+const totalPages = computed(() => 
+  Math.ceil(totalCount.value / searchCondition.limit)
+);
 const visiblePages = computed(() => {
   const total = totalPages.value;
   const current = currentPage.value;
@@ -170,6 +163,22 @@ const visiblePages = computed(() => {
   }
 
   return pages;
+});
+
+const showCreateNoticeModal = ref(false);
+const showNoticeDetailsModal = ref(false);
+
+const newNotice = reactive({
+  noticeId: null,
+  title: '',
+  content: '',
+  isActive: false,
+  createdAt: '',
+  createdBy: authStore.userId,
+  createdByName: authStore.loginId,
+  updatedAt: '',
+  updatedBy: authStore.userId,
+  updatedByName: authStore.loginId
 });
 
 // 공지 목록 조회
@@ -194,8 +203,15 @@ const fetchNotices = async () => {
     }
 };
 
-const formatDate = (date) => {
-  return format(new Date(date), 'yyyy-MM-dd HH:mm');
+const goToPage = (page) => {
+  const maxPage = totalPages.value;
+  if (page < 1 || page > maxPage) return;
+
+  const nextOffset = (page - 1) * searchCondition.limit;
+  const maxOffset = Math.max(0, (totalPages.value - 1)) * searchCondition.limit;
+  searchCondition.offset = nextOffset > maxOffset ? 0 : nextOffset;
+
+  fetchNotices();
 };
 
 const resetSearch = () => {
@@ -204,42 +220,9 @@ const resetSearch = () => {
   fetchNotices();
 };
 
-const newNotice = reactive({
-  noticeId: null,
-  title: '',
-  content: '',
-  isActive: false,
-  createdAt: '',
-  createdBy: authStore.userId,
-  createdByName: authStore.loginId,
-  updatedAt: '',
-  updatedBy: authStore.userId,
-  updatedByName: authStore.loginId
-});
-
-// 공지 내용 조회하기
-const showNoticeDetailsModal = ref(false);
-
-const closeNoticeModal = () => {
-  showNoticeDetailsModal.value = false;
+const formatDate = (date) => {
+  return format(new Date(date), 'yyyy-MM-dd HH:mm');
 };
-
-const goToNotice = async (notice) => {
-  try {
-    const response = await apiClient.get(`/notice/detail/${notice.noticeId}`);
-    const noticeDetails = response.data;
-    newNotice.title = noticeDetails.title;
-    newNotice.content = noticeDetails.content;
-    newNotice.isActive = noticeDetails.isActive;
-    showNoticeDetailsModal.value = true;
-  } catch (error) {
-    console.error("공지 세부 내용 조회 실패:", error);
-    alert("공지 세부 내용을 불러오는 데 실패했습니다.");
-  }
-};
-
-// 공지 등록하기
-const showCreateNoticeModal = ref(false);
 
 const openCreateNotice = () => {
   newNotice.noticeId = null;
@@ -330,6 +313,24 @@ const deleteNotice = async (notice) => {
       alert('공지 삭제에 실패했습니다.');
     }
   }
+};
+
+const goToNotice = async (notice) => {
+  try {
+    const response = await apiClient.get(`/notice/detail/${notice.noticeId}`);
+    const noticeDetails = response.data;
+    newNotice.title = noticeDetails.title;
+    newNotice.content = noticeDetails.content;
+    newNotice.isActive = noticeDetails.isActive;
+    showNoticeDetailsModal.value = true;
+  } catch (error) {
+    console.error("공지 세부 내용 조회 실패:", error);
+    alert("공지 세부 내용을 불러오는 데 실패했습니다.");
+  }
+};
+
+const closeNoticeModal = () => {
+  showNoticeDetailsModal.value = false;
 };
 
 onMounted(() => {

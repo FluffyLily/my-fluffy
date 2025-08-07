@@ -101,6 +101,39 @@ const searchCondition = reactive({
   limit: 10
 });
 
+const currentPage = computed(() =>
+  Math.floor(searchCondition.offset / searchCondition.limit) + 1
+);
+
+const totalPages = computed(() =>
+  Math.ceil(totalCount.value / searchCondition.limit)
+);
+
+const visiblePages = computed(() => {
+  const total = totalPages.value;
+  const current = Math.min(currentPage.value, total);
+  const delta = 2;
+  const pages = [];
+
+  for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) {
+    pages.push(i);
+  }
+
+  return pages;
+});
+
+const formatDate = (date) => {
+  return format(new Date(date), 'yyyy-MM-dd HH:mm');
+};
+
+const resetSearch = () => {
+  searchCondition.userTypeCode = null;
+  searchCondition.sort = 'recent';
+  searchCondition.searchType = null;
+  searchCondition.searchKeyword = '';
+  fetchUsers();
+};
+
 const fetchUsers = async () => {
   try {
     const response = await apiClient.post('/user/list', searchCondition);
@@ -120,40 +153,12 @@ const fetchUsers = async () => {
   }
 };
 
-const resetSearch = () => {
-  searchCondition.userTypeCode = null;
-  searchCondition.sort = 'recent';
-  searchCondition.searchType = null;
-  searchCondition.searchKeyword = '';
-  fetchUsers();
-};
-
-const formatDate = (date) => {
-  return format(new Date(date), 'yyyy-MM-dd HH:mm');
-};
-
-const currentPage = computed(() => Math.floor(searchCondition.offset / searchCondition.limit) + 1);
-const totalPages = computed(() => Math.ceil(totalCount.value / searchCondition.limit));
-
 const goToPage = (page) => {
   const safePage = Math.min(page, totalPages.value);
   if (safePage < 1) return;
   searchCondition.offset = (safePage - 1) * searchCondition.limit;
   fetchUsers();
 };
-
-const visiblePages = computed(() => {
-  const total = totalPages.value;
-  const current = Math.min(currentPage.value, total);
-  const delta = 2;
-  const pages = [];
-
-  for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) {
-    pages.push(i);
-  }
-
-  return pages;
-});
 
 onMounted(fetchUsers);
 </script>

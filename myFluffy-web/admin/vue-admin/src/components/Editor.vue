@@ -164,33 +164,24 @@ import { hasAnyRole } from '../util/roleUtils.js';
 import { useToast } from 'vue-toastification';
 
 const props = defineProps({
-  postId: {
-    type: Number,
-    default: null
-  },
-  boardId: {
-    type: Number,
-    default: null
-  },
-  boardName: {
-    type: String,
-    default: ''
-  }
+  postId: { type: Number, default: null },
+  boardId: { type: Number, default: null},
+  boardName: { type: String, default: ''}
 });
-// 이미지 업로드 상태 및 에러 메시지
-const isUploading = ref(false);
-const uploadError = ref('');
-
-// 업로드된 이미지 목록 추적
-const uploadedImages = ref([]);
 
 const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 
+// 이미지 업로드 관련
+const isUploading = ref(false);
+const uploadError = ref('');
+const uploadedImages = ref([]);
+
 // 게시판 목록과 관련 데이터들
-const boards = ref([])
+const boards = ref([]);
+
 const newPost = reactive({
   boardId: props.boardId,
   boardCategoryId: null,
@@ -218,6 +209,87 @@ const editor = ref(null)
 
 const MAX_FILE_SIZE_MB = 3;
 
+// 태그 관련 데이터
+const allTags = ref([]);
+const tagSuggestions = ref([]);
+const tagInput = ref('');
+const isComposing = ref(false);
+
+// fuse 설정
+const fuse = computed(() => new Fuse(allTags.value, {
+  includeScore: true, // 결과에 유사도 점수를 포함
+  threshold: 0.4, // 0~1 사이: 수치가 낮을 수록 엄격하게 허용함
+}));
+
+const isTagLimitReached = computed(() => newPost.postCategory.length >= 3);
+
+const selectedPostId = ref(null);
+const selectedPostTitle = ref('');
+
+const canSubmit = computed(() => {
+  return newPost.boardId && newPost.title.trim() !== '' && newPost.content.trim() !== '';
+});
+
+// 현재 관리자의 게시글 삭제 권한 확인 (수정 모드일 때만 노출)
+const canDeletePost = computed(() =>
+  props.postId && (
+    hasAnyRole(authStore.roleId, ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN']) ||
+    authStore.userId === newPost.createdBy
+  )
+);
+
+const deletePassword = ref('');
+const deleteError = ref('');
+const showDeletePostModal = ref(false);
+
+const editorConfig = reactive({
+  toolbar: {
+    shouldNotGroupWhenFull: true,
+    items: [
+      'heading',
+      '|',
+      'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript',
+      'fontColor', 'fontBackgroundColor', 'highlight',
+      '|',
+      'alignment',
+      'link',
+      'bulletedList', 'numberedList', 'outdent', 'indent',
+      '|',
+      'imageUpload', 'insertTable', 'blockQuote', 'codeBlock',
+      '|',
+      'mediaEmbed', 'specialCharacters', 'horizontalLine',
+      '|',
+      'undo', 'redo',
+      'findAndReplace',
+      'tableProperties', 'tableCellProperties'
+    ]
+  },
+  image: {
+    toolbar: [
+      'imageStyle:side',
+      '|',
+      'imageTextAlternative'
+    ],
+    resizeUnit: '%',
+    styles: ['side']
+  },
+  extraPlugins: [CustomUploadAdapterPlugin],
+  table: {
+    contentToolbar: [
+      'tableColumn',
+      'tableRow',
+      'mergeTableCells'
+    ]
+  },
+  horizontalLine: {},
+  wordCount: {
+    container: '#word-count'
+  },
+  language: 'ko',
+  licenseKey: 'GPL'
+})
+
+// 함수
 class MyUploadAdapter {
   constructor(loader) {
     this.loader = loader;
@@ -267,53 +339,6 @@ function CustomUploadAdapterPlugin(editor) {
   };
 }
 
-const editorConfig = reactive({
-  toolbar: {
-    shouldNotGroupWhenFull: true,
-    items: [
-      'heading',
-      '|',
-      'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript',
-      'fontColor', 'fontBackgroundColor', 'highlight',
-      '|',
-      'alignment',
-      'link',
-      'bulletedList', 'numberedList', 'outdent', 'indent',
-      '|',
-      'imageUpload', 'insertTable', 'blockQuote', 'codeBlock',
-      '|',
-      'mediaEmbed', 'specialCharacters', 'horizontalLine',
-      '|',
-      'undo', 'redo',
-      'findAndReplace',
-      'tableProperties', 'tableCellProperties'
-    ]
-  },
-  image: {
-    toolbar: [
-      'imageStyle:side',
-      '|',
-      'imageTextAlternative'
-    ],
-    resizeUnit: '%',
-    styles: ['side']
-  },
-  extraPlugins: [CustomUploadAdapterPlugin],
-  table: {
-    contentToolbar: [
-      'tableColumn',
-      'tableRow',
-      'mergeTableCells'
-    ]
-  },
-  horizontalLine: {},
-  wordCount: {
-    container: '#word-count'
-  },
-  language: 'ko',
-  licenseKey: 'GPL'
-})
-
 // 에디터 내 이미지 URL 추출하기
 const extractImageUrls = (htmlContent) => {
   const urls = [];
@@ -325,18 +350,6 @@ const extractImageUrls = (htmlContent) => {
   return urls;
 };
 
-// 태그 관련 데이터
-const allTags = ref([]);
-const tagSuggestions = ref([]);
-const tagInput = ref('');
-
-watch(tagInput, (val) => {
-  const keyword = val.replace('#', '').toLowerCase();
-  tagSuggestions.value = fuse.value.search(keyword).map(result => result.item);
-});
-
-const isComposing = ref(false);
-
 const handleCompositionStart = () => { isComposing.value = true; };
 const handleCompositionEnd = () => { isComposing.value = false; };
 
@@ -347,14 +360,6 @@ const handleKeyDown = (event) => {
   }
 };
 
-// fuse 설정
-const fuse = computed(() => new Fuse(allTags.value, {
-  includeScore: true, // 결과에 유사도 점수를 포함
-  threshold: 0.4, // 0~1 사이: 수치가 낮을 수록 엄격하게 허용함
-}));
-
-const isTagLimitReached = computed(() => newPost.postCategory.length >= 3);
-
 // 태그 추천 + 자동 완성 
 const selectTag = (tag) => {
   if (!newPost.postCategory.includes(tag)) {
@@ -363,6 +368,7 @@ const selectTag = (tag) => {
   tagInput.value = '';
   tagSuggestions.value = [];
 };
+
 // 단어 입력 후 # 태그 자동 입력
 const addTag = () => {
   if (newPost.postCategory.length >= 3) return;
@@ -536,37 +542,6 @@ const writePost = async () => {
   }
 }
 
-const selectedPostId = ref(null);
-const selectedPostTitle = ref('');
-
-const canSubmit = computed(() => {
-  return newPost.boardId && newPost.title.trim() !== '' && newPost.content.trim() !== '';
-});
-
-// 현재 관리자의 게시글 삭제 권한 확인 (수정 모드일 때만 노출)
-const canDeletePost = computed(() =>
-  props.postId && (
-    hasAnyRole(authStore.roleId, ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN']) ||
-    authStore.userId === newPost.createdBy
-  )
-);
-
-const deletePassword = ref('');
-const deleteError = ref('');
-const showDeletePostModal = ref(false);
-
-// 관리자 삭제 모달 비밀번호 에러 메시지 초기화
-watch(showDeletePostModal, (newVal) => {
-  if (!newVal) {
-      deleteError.value = '';
-  }
-});
-
-// 사용자가 비밀번호 입력을 다시 시작하면 에러 메시지 제거
-watch(deletePassword, () => {
-    deleteError.value = '';
-});
-
 const confirmDeletePost = (postId, postTitle) => {
   selectedPostId.value = postId;
   selectedPostTitle.value = postTitle;
@@ -635,6 +610,23 @@ onMounted(async () => {
   }
 })
 
+// 태그 추천
+watch(tagInput, (val) => {
+  const keyword = val.replace('#', '').toLowerCase();
+  tagSuggestions.value = fuse.value.search(keyword).map(result => result.item);
+});
+
+// 관리자 삭제 모달 비밀번호 에러 메시지 초기화
+watch(showDeletePostModal, (newVal) => {
+  if (!newVal) {
+      deleteError.value = '';
+  }
+});
+
+// 사용자가 비밀번호 입력을 다시 시작하면 에러 메시지 제거
+watch(deletePassword, () => {
+    deleteError.value = '';
+});
 </script>
 
 <style scoped lang="scss">

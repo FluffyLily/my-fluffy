@@ -116,7 +116,6 @@ import { useRouter } from 'vue-router';
 import { useRoute } from 'vue-router';
 import { onBeforeRouteUpdate } from 'vue-router';
 
-// 1. 상태 변수 정의
 const route = useRoute();
 const router = useRouter();
 const boards = ref([]);
@@ -166,7 +165,6 @@ const visiblePages = computed(() => {
   return pages;
 });
 
-// 2. 함수 정의
 const formatDate = (date) => {
   return format(new Date(date), 'yyyy-MM-dd HH:mm');
 };
@@ -295,7 +293,6 @@ const getBoardColorClass = (boardName) => {
   return boardColorMap[boardName];
 };
 
-// 3. 라이프 사이클
 onMounted(async () => {
   await fetchBoards();
   if (route.query.filteredByBoard === 'true' && !route.query.boardId) {

@@ -59,60 +59,35 @@ const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const authStore = useAuthStore();
+
 const props = defineProps({
-    postId: {
-        type: [String, Number],
-        required: true
-    },
-    boardId: {
-        type: [String, Number],
-        required: false
-    },
-    boardName: {
-        type: String,
-        required: false
-    }
+    postId: { type: [String, Number], required: true },
+    boardId: { type: [String, Number], required: false },
+    boardName: { type: String, required: false }
 });
 
 const postId = props.postId;
 const post = ref({});
 const postTags = ref([]);
-
-const canEdit = computed(() => !!postId);
 const selectedPostTitle = ref('');
 const selectedPostId = ref(null);
-
 const deletePassword = ref('');
 const deleteError = ref('');
 const showDeletePostModal = ref(false);
 
-// 관리자 삭제 모달 비밀번호 에러 메시지 초기화
-watch(showDeletePostModal, (newVal) => {
-    if (!newVal) deleteError.value = '';
-});
-
-// 사용자가 비밀번호 입력을 다시 시작하면 에러 메시지 제거
-watch(deletePassword, () => {
-    deleteError.value = '';
-});
-
-const confirmDeletePost = (postId, postTitle) => {
-    selectedPostId.value = postId;
-    selectedPostTitle.value = postTitle;
-    showDeletePostModal.value = true;
-};
-
-const closeDeleteModal = () => {
-    showDeletePostModal.value = false;
-    deletePassword.value = '';
-};
-
+const canEdit = computed(() => !!postId);
 const canDelete = computed(() =>
     postId && (
         hasAnyRole(authStore.roleId, ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN']) ||
         authStore.userId === post.value.createdBy
     )
 );
+
+const formatDate = (date) => {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '-';
+    return format(d, 'yyyy-MM-dd HH:mm');
+};
 
 const fetchPost = async () => {
     try {
@@ -128,38 +103,17 @@ const fetchPost = async () => {
     }
 };
 
-// 보던 게시글 목록으로 돌아가기
-const goToPostList = () => {
-    const query = {};
-    if (route.query.filteredByBoard === 'true' && route.query.boardId) {
-        query.boardId = route.query.boardId;
-        query.boardName = route.query.boardName;
-        query.filteredByBoard = 'true';
-    }
-    router.push({
-        name: 'PostManagement',
-        query
-    });
+const confirmDeletePost = (postId, postTitle) => {
+    selectedPostId.value = postId;
+    selectedPostTitle.value = postTitle;
+    showDeletePostModal.value = true;
 };
 
-// 수정하기 에디터 이동
-const goToEdit = () => {
-    const query = {};
-    if (route.query.filteredByBoard === 'true' && route.query.boardId) {
-        query.boardId = route.query.boardId;
-        query.boardName = route.query.boardName;
-        query.filteredByBoard = 'true';
-    }
-    router.push({
-        name: 'UpdatePost',
-        params: {
-            postId,
-        },
-        query
-    });
+const closeDeleteModal = () => {
+    showDeletePostModal.value = false;
+    deletePassword.value = '';
 };
 
-// 게시글 삭제하기
 const deletePost = async () => {
     if (!deletePassword.value.trim()) {
         deleteError.value = '관리자 비밀번호를 입력하세요.';
@@ -201,10 +155,35 @@ const deletePost = async () => {
     }
 };
 
-const formatDate = (date) => {
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '-';
-    return format(d, 'yyyy-MM-dd HH:mm');
+// 보던 게시글 목록으로 돌아가기
+const goToPostList = () => {
+    const query = {};
+    if (route.query.filteredByBoard === 'true' && route.query.boardId) {
+        query.boardId = route.query.boardId;
+        query.boardName = route.query.boardName;
+        query.filteredByBoard = 'true';
+    }
+    router.push({
+        name: 'PostManagement',
+        query
+    });
+};
+
+// 수정하기 에디터 이동
+const goToEdit = () => {
+    const query = {};
+    if (route.query.filteredByBoard === 'true' && route.query.boardId) {
+        query.boardId = route.query.boardId;
+        query.boardName = route.query.boardName;
+        query.filteredByBoard = 'true';
+    }
+    router.push({
+        name: 'UpdatePost',
+        params: {
+            postId,
+        },
+        query
+    });
 };
 
 onMounted(() => {
@@ -220,6 +199,16 @@ onMounted(() => {
         const { edited, ...restQuery } = route.query;
         router.replace({ query: restQuery });
     }
+});
+
+// 관리자 삭제 모달 비밀번호 에러 메시지 초기화
+watch(showDeletePostModal, (newVal) => {
+    if (!newVal) deleteError.value = '';
+});
+
+// 사용자가 비밀번호 입력을 다시 시작하면 에러 메시지 제거
+watch(deletePassword, () => {
+    deleteError.value = '';
 });
 </script>
 

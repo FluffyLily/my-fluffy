@@ -189,439 +189,435 @@ import { useAuthStore } from '../stores/auth.js';
 import { hasAnyRole } from '../util/roleUtils.js';
 import { useRouter } from 'vue-router';
 
-// 1.상태 변수 정의(ref/reactive/computed)
-  // 기본 셋업
-  const router = useRouter();
-  const authStore = useAuthStore();
-  const userId = authStore.userId;
+// 기본 셋업
+const router = useRouter();
+const authStore = useAuthStore();
+const userId = authStore.userId;
 
-  // 게시판 & 카테고리 목록
-  const boardList = ref([]);
-  const categories = ref([]);
-  const filteredBoards = ref([]);
-  const allCategory = reactive({
-    name: '전체',
-    colorClass: ''
-  });
+// 게시판 & 카테고리 목록
+const boardList = ref([]);
+const categories = ref([]);
+const filteredBoards = ref([]);
+const allCategory = reactive({
+  name: '전체',
+  colorClass: ''
+});
 
-  // 게시글 목록
-  const posts = ref([]);
-  const searchCondition = reactive({
-    boardId: null,
-    postCategory: '',
-    searchKeyword: '',
-    searchType: null,
-    sort: 'recent',
-    offset: 0,
-    limit: 5
-  })
+// 게시글 목록
+const posts = ref([]);
+const searchCondition = reactive({
+  boardId: null,
+  postCategory: '',
+  searchKeyword: '',
+  searchType: null,
+  sort: 'recent',
+  offset: 0,
+  limit: 5
+})
 
-  // 게시판 & 카테고리 생성
-  const newCategory = ref({
-    boardCategoryName: '',
-    createdBy: userId,
-    createdAt: new Date().toISOString(),
-    updatedBy: userId,
-    updatedAt: new Date().toISOString()
-  });
-  const newBoard = ref({
+// 게시판 & 카테고리 생성
+const newCategory = ref({
+  boardCategoryName: '',
+  createdBy: userId,
+  createdAt: new Date().toISOString(),
+  updatedBy: userId,
+  updatedAt: new Date().toISOString()
+});
+const newBoard = ref({
+  boardName: '',
+  boardCategoryId: '',
+  createdBy: userId,
+  createdAt: new Date().toISOString(),
+  updatedBy: userId,
+  updatedAt: new Date().toISOString()
+});
+const showCreateCategoryModal = ref(false);
+const showCreateBoardModal = ref(false);
+const categoryNameError = ref(null);
+const boardNameError = ref(null);
+
+// 선택 상태 구분
+const selectedBoard = reactive({
+  boardId: null,
+  boardName: '',
+  createdAt: '',
+  createdBy: null,
+  createdByLoginId: '',
+  updatedAt: '',
+  updatedBy: null,
+  updatedByLoginId: '',
+  categories: []
+});
+const selectedCategory = ref(null);
+const selectedBoardId = ref(null);
+const selectedBoardName = ref('');
+
+// 게시판 수정 관련
+const editBoard = ref({
+  boardId: null,
+  boardName: '',
+  boardCategoryId: null,
+  boardCategoryName: '',
+  updatedBy: authStore.userId,
+  updatedAt: new Date().toISOString()
+});
+const boardEditError = ref(null);
+const showEditBoardModal = ref(false);
+const isBoardUpdated = ref(false);
+
+// 게시판 삭제 관련
+const canDeleteBoard = computed(() => 
+  hasAnyRole(authStore.roleId, ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'])
+);
+const deletePassword = ref('');
+const deleteError = ref('');
+const showDeleteBoardModal = ref(false);
+
+// 유효성 검사
+const isCategoryValid = computed(() => newCategory.value.boardCategoryName.trim().length > 0);
+const isBoardValid = computed(() =>
+  newBoard.value.boardName.trim().length > 0 &&
+  newBoard.value.boardCategoryId && newBoard.value.boardCategoryId.toString().trim().length > 0
+);
+
+// 유틸 & 공통
+const resetCreateForm = () => {
+  newBoard.value = {
     boardName: '',
     boardCategoryId: '',
     createdBy: userId,
     createdAt: new Date().toISOString(),
     updatedBy: userId,
     updatedAt: new Date().toISOString()
-  });
-  const showCreateCategoryModal = ref(false);
-  const showCreateBoardModal = ref(false);
-  const categoryNameError = ref(null);
-  const boardNameError = ref(null);
-
-  // 선택 상태 구분
-  const selectedBoard = reactive({
-    boardId: null,
-    boardName: '',
-    createdAt: '',
-    createdBy: null,
-    createdByLoginId: '',
-    updatedAt: '',
-    updatedBy: null,
-    updatedByLoginId: '',
-    categories: []
-  });
-  const selectedCategory = ref(null);
-  const selectedBoardId = ref(null);
-  const selectedBoardName = ref('');
-
-  // 게시판 수정 관련
-  const editBoard = ref({
-    boardId: null,
-    boardName: '',
-    boardCategoryId: null,
+  };
+  newCategory.value = {
     boardCategoryName: '',
-    updatedBy: authStore.userId,
+    createdBy: userId,
+    createdAt: new Date().toISOString(),
+    updatedBy: userId,
     updatedAt: new Date().toISOString()
-  });
-  const boardEditError = ref(null);
-  const showEditBoardModal = ref(false);
-  const isBoardUpdated = ref(false);
-
-  // 게시판 삭제 관련
-  const canDeleteBoard = computed(() => 
-    hasAnyRole(authStore.roleId, ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'])
-  );
-  const deletePassword = ref('');
-  const deleteError = ref('');
-  const showDeleteBoardModal = ref(false);
-
-  // 유효성 검사
-  const isCategoryValid = computed(() => newCategory.value.boardCategoryName.trim().length > 0);
-  const isBoardValid = computed(() =>
-    newBoard.value.boardName.trim().length > 0 &&
-    newBoard.value.boardCategoryId && newBoard.value.boardCategoryId.toString().trim().length > 0
-  );
-
-// 2. 함수 정의
-  // 유틸 & 공통
-  const resetCreateForm = () => {
-    newBoard.value = {
-      boardName: '',
-      boardCategoryId: '',
-      createdBy: userId,
-      createdAt: new Date().toISOString(),
-      updatedBy: userId,
-      updatedAt: new Date().toISOString()
-    };
-    newCategory.value = {
-      boardCategoryName: '',
-      createdBy: userId,
-      createdAt: new Date().toISOString(),
-      updatedBy: userId,
-      updatedAt: new Date().toISOString()
-    };
-    categoryNameError.value = null;
-    boardNameError.value = null;
   };
+  categoryNameError.value = null;
+  boardNameError.value = null;
+};
 
-  const closeCategoryModal = () => {
-    showCreateCategoryModal.value = false;
-    resetCreateForm();
-  };
-  const openCreateBoardModal = () => {
-    showCreateBoardModal.value = true;
-    resetCreateForm();
-  };
-  const closeCreateBoardModal = () => {
-    showCreateBoardModal.value = false;
-    resetCreateForm();
-  };
+const closeCategoryModal = () => {
+  showCreateCategoryModal.value = false;
+  resetCreateForm();
+};
+const openCreateBoardModal = () => {
+  showCreateBoardModal.value = true;
+  resetCreateForm();
+};
+const closeCreateBoardModal = () => {
+  showCreateBoardModal.value = false;
+  resetCreateForm();
+};
 
-  const assignRandomColorClass = (category) => {
-    const colorClasses = ['color-pink', 'color-avocado', 'color-violet', 'color-seafoam', 'color-honey'];
-    category.colorClass = colorClasses[Math.floor(Math.random() * colorClasses.length)];
-  };
-  assignRandomColorClass(allCategory);
+const assignRandomColorClass = (category) => {
+  const colorClasses = ['color-pink', 'color-avocado', 'color-violet', 'color-seafoam', 'color-honey'];
+  category.colorClass = colorClasses[Math.floor(Math.random() * colorClasses.length)];
+};
+assignRandomColorClass(allCategory);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return format(new Date(dateString), 'yyyy-MM-dd HH:mm:ss');
-  };
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  return format(new Date(dateString), 'yyyy-MM-dd HH:mm:ss');
+};
 
-  // 게시판 목록 및 필터링
-  // 게시판 카테고리 목록 가져오기
-  const selectAllCategories = async () => {
-    try {
-      const response = await apiClient.get('/board/category');
-      categories.value = response.data.map(category => {
-        assignRandomColorClass(category);
-        return category;
-      });
-    } catch (error) {
-      console.error('게시판 카테고리 불러오기 실패:', error);
-    }
-  };
-
-  // 게시판 목록 가져오기
-  const getBoardList = async () => {
-    try {
-      const response = await apiClient.get('/board/list');
-      boardList.value = response.data;
-      filteredBoards.value = boardList.value;
-      updateActiveBoard();
-    } catch (error) {
-      console.error('게시판 목록 불러오기 실패:', error);
-      boardList.value = [];
-    }
-  };
-
-  // 카테고리 선택 시 게시판 목록 필터링
-  const selectCategory = async (boardCategoryId) => {
-    selectedCategory.value = boardCategoryId;
-    try {
-      const response = await apiClient.get(`/board/list/${boardCategoryId}`);
-      boardList.value = response.data;
-      updateActiveBoard();
-    } catch (error) {
-      console.error('게시판 카테고리 필터링 실패:', error);
-    }
-  };
-
-  const showAllBoards = async () => {
-    selectedCategory.value = null;
-    await getBoardList();
-  };
-
-  // 게시판 상세 및 선택
-  // 게시판 세부정보 가져오기
-  const goToBoardDetail = async (board) => {
-    if (!board.boardId) return;
-    if (selectedBoard.boardId === board.boardId) {
-      Object.assign(selectedBoard, {
-        boardId: null,
-        boardName: '',
-        createdAt: '',
-        createdBy: null,
-        createdByLoginId: '',
-        updatedAt: '',
-        updatedBy: null,
-        updatedByLoginId: '',
-        categories: []
-      });
-
-      selectedBoardId.value = null;
-      searchCondition.boardId = null;
-      await fetchPosts();
-      updateActiveBoard();
-      return;
-    }
-    try {
-      const response = await apiClient.get(`/board/detail/${board.boardId}`);
-      if (response.data) {
-        selectedBoard.boardId = null;
-        await nextTick();
-
-        Object.assign(selectedBoard, response.data);
-        selectedBoardId.value = board.boardId;
-
-        searchCondition.boardId = board.boardId;
-        await fetchPosts();
-      }
-      updateActiveBoard();
-    } catch (error) {
-      console.error('게시판 세부 정보 가져오기 실패:', error);
-    }
-  };
-
-  // 선택한 게시판 활성화하기
-  const updateActiveBoard = () => {
-    boardList.value.forEach(board => {
-      board.isActive = selectedBoardId.value !== null && board.boardId === selectedBoardId.value;
+// 게시판 목록 및 필터링
+// 게시판 카테고리 목록 가져오기
+const selectAllCategories = async () => {
+  try {
+    const response = await apiClient.get('/board/category');
+    categories.value = response.data.map(category => {
+      assignRandomColorClass(category);
+      return category;
     });
-  };
+  } catch (error) {
+    console.error('게시판 카테고리 불러오기 실패:', error);
+  }
+};
 
-  // 게시판 상세 정보 가져오기
-  const fetchBoardDetail = async (boardId) => {
-    if (!boardId) {
-      console.warn("boardId가 없습니다. URL을 확인하세요.");
-      return;
+// 게시판 목록 가져오기
+const getBoardList = async () => {
+  try {
+    const response = await apiClient.get('/board/list');
+    boardList.value = response.data;
+    filteredBoards.value = boardList.value;
+    updateActiveBoard();
+  } catch (error) {
+    console.error('게시판 목록 불러오기 실패:', error);
+    boardList.value = [];
+  }
+};
+
+// 카테고리 선택 시 게시판 목록 필터링
+const selectCategory = async (boardCategoryId) => {
+  selectedCategory.value = boardCategoryId;
+  try {
+    const response = await apiClient.get(`/board/list/${boardCategoryId}`);
+    boardList.value = response.data;
+    updateActiveBoard();
+  } catch (error) {
+    console.error('게시판 카테고리 필터링 실패:', error);
+  }
+};
+
+const showAllBoards = async () => {
+  selectedCategory.value = null;
+  await getBoardList();
+};
+
+// 게시판 상세 및 선택
+// 게시판 세부정보 가져오기
+const goToBoardDetail = async (board) => {
+  if (!board.boardId) return;
+  if (selectedBoard.boardId === board.boardId) {
+    Object.assign(selectedBoard, {
+      boardId: null,
+      boardName: '',
+      createdAt: '',
+      createdBy: null,
+      createdByLoginId: '',
+      updatedAt: '',
+      updatedBy: null,
+      updatedByLoginId: '',
+      categories: []
+    });
+
+    selectedBoardId.value = null;
+    searchCondition.boardId = null;
+    await fetchPosts();
+    updateActiveBoard();
+    return;
+  }
+  try {
+    const response = await apiClient.get(`/board/detail/${board.boardId}`);
+    if (response.data) {
+      selectedBoard.boardId = null;
+      await nextTick();
+
+      Object.assign(selectedBoard, response.data);
+      selectedBoardId.value = board.boardId;
+
+      searchCondition.boardId = board.boardId;
+      await fetchPosts();
     }
+    updateActiveBoard();
+  } catch (error) {
+    console.error('게시판 세부 정보 가져오기 실패:', error);
+  }
+};
+
+// 선택한 게시판 활성화하기
+const updateActiveBoard = () => {
+  boardList.value.forEach(board => {
+    board.isActive = selectedBoardId.value !== null && board.boardId === selectedBoardId.value;
+  });
+};
+
+// 게시판 상세 정보 가져오기
+const fetchBoardDetail = async (boardId) => {
+  if (!boardId) {
+    console.warn("boardId가 없습니다. URL을 확인하세요.");
+    return;
+  }
+  try {
+    const response = await apiClient.get(`/board/detail/${boardId}`);
+
+    if (response.data) {
+      Object.assign(selectedBoard, response.data);
+    }
+  } catch (error) {
+    console.error('게시판 세부 정보 가져오기 실패:', error);
+    deleteError.value = '게시판 정보를 불러오는 데 실패했습니다. 다시 시도해 주세요.';
+  }
+};
+
+// 게시판 생성 및 수정
+// 게시판 카테고리 추가
+const createBoardCategory = async () => {
+  if (!newCategory.value.boardCategoryName.trim()) {
+    categoryNameError.value = '카테고리 이름을 입력하세요.';
+    return;
+  }
+  if (confirm("새로운 게시판 카테고리를 생성하시겠습니까?")) {
     try {
-      const response = await apiClient.get(`/board/detail/${boardId}`);
+      await apiClient.post('/board/category', newCategory.value);
+      await selectAllCategories();
 
-      if (response.data) {
-        Object.assign(selectedBoard, response.data);
-      }
+      newCategory.value.boardCategoryName = '';
+      showCreateCategoryModal.value = false;
     } catch (error) {
-      console.error('게시판 세부 정보 가져오기 실패:', error);
-      deleteError.value = '게시판 정보를 불러오는 데 실패했습니다. 다시 시도해 주세요.';
-    }
-  };
-
-  // 게시판 생성 및 수정
-  // 게시판 카테고리 추가
-  const createBoardCategory = async () => {
-    if (!newCategory.value.boardCategoryName.trim()) {
-      categoryNameError.value = '카테고리 이름을 입력하세요.';
-      return;
-    }
-    if (confirm("새로운 게시판 카테고리를 생성하시겠습니까?")) {
-      try {
-        await apiClient.post('/board/category', newCategory.value);
-        await selectAllCategories();
-
-        newCategory.value.boardCategoryName = '';
-        showCreateCategoryModal.value = false;
-      } catch (error) {
-        console.error('카테고리 추가 실패:', error);
-      }
-    }
-  };
-
-  // 게시판 추가하기
-  const createBoard = async () => {
-    if (!newBoard.value.boardName.trim()) {
-      boardNameError.value = '게시판 이름을 입력하세요.';
-      return;
-    }
-    if (confirm("새로운 게시판을 생성하시겠습니까?")) {
-      newBoard.value.createdAt = new Date().toISOString();
-      newBoard.value.updatedAt = new Date().toISOString();
-      try {
-        await apiClient.post('/board/create', newBoard.value);
-        await getBoardList();
-        newBoard.value.boardName = '';
-        newBoard.value.boardCategoryId = null;
-        showCreateBoardModal.value = false;
-      } catch (error) {
-        console.error('게시판 추가 실패:', error);
-      }
-    }
-  };
-
-  // 게시판 세부정보 수정 데이터, 모달 세팅
-  const editBoardMenu = (selectedBoard) => {
-    editBoard.value = { 
-      boardId: selectedBoard.boardId,
-      boardName: selectedBoard.boardName,
-      updatedBy: authStore.userId,
-      boardCategoryId: selectedBoard.categories.length ? selectedBoard.categories[0].boardCategoryId : '',
-      boardCategoryName: selectedBoard.categories.length ? selectedBoard.categories[0].boardCategoryName : ''
-    };
-
-    boardEditError.value = null;
-    showEditBoardModal.value = true;
-
-  };
-
-  // 게시판 수정 사항 업데이트 요청
-  const updateBoard = async () => {
-    if (!editBoard.value.boardName.trim()) {
-      boardEditError.value = '게시판의 이름을 입력하세요.';
-      return;
-    }
-    if (confirm("게시판을 수정하시겠습니까?")) {
-      try {
-        await apiClient.put(`/board/update/${editBoard.value.boardId}`, {
-          boardId: editBoard.value.boardId,
-          boardName: editBoard.value.boardName,
-          boardCategoryId: editBoard.value.boardCategoryId,
-          updatedBy: editBoard.value.updatedBy
-        });
-
-        showEditBoardModal.value = false;
-        await getBoardList();
-        isBoardUpdated.value = true;
-        
-      } catch (error) {
-        console.error('게시판 수정 실패:', error);
-      }
-    }
-  };
-
-  // 게시글 목록 가져오기
-  const fetchPosts = async () => {
-    try {
-      const response = await apiClient.post('/post/list', searchCondition);
-      posts.value = response.data.posts;
-    } catch (error) {
-      console.error('게시글 목록 조회 실패:', error);
-      posts.value = [];
-    }
-  };
-
-  // 게시글 관리 페이지로 가기
-  const goToPostManagement = () => {
-    if (selectedBoard?.boardId) {
-      router.push({
-        name: 'PostManagement',
-        query: { boardId: selectedBoard?.boardId }
-      });
-    } else {
-      router.push({ name: 'PostManagement' });
+      console.error('카테고리 추가 실패:', error);
     }
   }
+};
 
-  // 게시글 선택 + 게시글 관리 페이지로 가기
-  const goToPostManagementWithPostId = (postId) => {
+// 게시판 추가하기
+const createBoard = async () => {
+  if (!newBoard.value.boardName.trim()) {
+    boardNameError.value = '게시판 이름을 입력하세요.';
+    return;
+  }
+  if (confirm("새로운 게시판을 생성하시겠습니까?")) {
+    newBoard.value.createdAt = new Date().toISOString();
+    newBoard.value.updatedAt = new Date().toISOString();
+    try {
+      await apiClient.post('/board/create', newBoard.value);
+      await getBoardList();
+      newBoard.value.boardName = '';
+      newBoard.value.boardCategoryId = null;
+      showCreateBoardModal.value = false;
+    } catch (error) {
+      console.error('게시판 추가 실패:', error);
+    }
+  }
+};
+
+// 게시판 세부정보 수정 데이터, 모달 세팅
+const editBoardMenu = (selectedBoard) => {
+  editBoard.value = { 
+    boardId: selectedBoard.boardId,
+    boardName: selectedBoard.boardName,
+    updatedBy: authStore.userId,
+    boardCategoryId: selectedBoard.categories.length ? selectedBoard.categories[0].boardCategoryId : '',
+    boardCategoryName: selectedBoard.categories.length ? selectedBoard.categories[0].boardCategoryName : ''
+  };
+
+  boardEditError.value = null;
+  showEditBoardModal.value = true;
+
+};
+
+// 게시판 수정 사항 업데이트 요청
+const updateBoard = async () => {
+  if (!editBoard.value.boardName.trim()) {
+    boardEditError.value = '게시판의 이름을 입력하세요.';
+    return;
+  }
+  if (confirm("게시판을 수정하시겠습니까?")) {
+    try {
+      await apiClient.put(`/board/update/${editBoard.value.boardId}`, {
+        boardId: editBoard.value.boardId,
+        boardName: editBoard.value.boardName,
+        boardCategoryId: editBoard.value.boardCategoryId,
+        updatedBy: editBoard.value.updatedBy
+      });
+
+      showEditBoardModal.value = false;
+      await getBoardList();
+      isBoardUpdated.value = true;
+      
+    } catch (error) {
+      console.error('게시판 수정 실패:', error);
+    }
+  }
+};
+
+// 게시글 목록 가져오기
+const fetchPosts = async () => {
+  try {
+    const response = await apiClient.post('/post/list', searchCondition);
+    posts.value = response.data.posts;
+  } catch (error) {
+    console.error('게시글 목록 조회 실패:', error);
+    posts.value = [];
+  }
+};
+
+// 게시글 관리 페이지로 가기
+const goToPostManagement = () => {
+  if (selectedBoard?.boardId) {
     router.push({
       name: 'PostManagement',
-      query: {
-        boardId: selectedBoard?.boardId,
-        focusedPostId: postId
-      }
+      query: { boardId: selectedBoard?.boardId }
     });
+  } else {
+    router.push({ name: 'PostManagement' });
   }
+}
 
-  // 게시판 삭제
-  const confirmDeleteBoardMenu = (boardId, boardName) => {
-    selectedBoardId.value = boardId;
-    selectedBoardName.value = boardName;
-    showDeleteBoardModal.value = true;
-  };
-    
-  // 게시판 삭제하기
-  const deleteBoard = async () => {
-    if (!selectedBoardId) {
-      console.error('삭제할 게시판이 선택되지 않았습니다.');
-      return;
+// 게시글 선택 + 게시글 관리 페이지로 가기
+const goToPostManagementWithPostId = (postId) => {
+  router.push({
+    name: 'PostManagement',
+    query: {
+      boardId: selectedBoard?.boardId,
+      focusedPostId: postId
     }
-    if (!deletePassword.value.trim()) {
-      deleteError.value = '관리자 비밀번호를 입력하세요.';
-      return;
-    }
-    try {
-      const response = await apiClient.post('/admin/verify-password', {
-      username: authStore.loginId, 
-      password: deletePassword.value 
-      });
-      if (response.data.success) {
-        console.log("게시판 삭제 모달 [boardName]: ", selectedBoardName);
+  });
+}
 
-          await apiClient.delete(`/board/delete/${selectedBoardId.value}`, {
-              params: { 
-              deleterId: authStore.loginId,
-              boardName: selectedBoardName.value
-              }
-          });
-          showDeleteBoardModal.value = false;
-          deletePassword.value = '';
-          await getBoardList();
-      } else {
-          deleteError.value = '비밀번호가 일치하지 않습니다.';
-      }
-    } catch (error) {
-      console.error('게시판을 삭제하지 못함: ', error);
-      deleteError.value = '게시판 삭제 중 문제가 발생했습니다. 다시 시도해 주세요.';
-    }
-  };
+// 게시판 삭제
+const confirmDeleteBoardMenu = (boardId, boardName) => {
+  selectedBoardId.value = boardId;
+  selectedBoardName.value = boardName;
+  showDeleteBoardModal.value = true;
+};
   
+// 게시판 삭제하기
+const deleteBoard = async () => {
+  if (!selectedBoardId) {
+    console.error('삭제할 게시판이 선택되지 않았습니다.');
+    return;
+  }
+  if (!deletePassword.value.trim()) {
+    deleteError.value = '관리자 비밀번호를 입력하세요.';
+    return;
+  }
+  try {
+    const response = await apiClient.post('/admin/verify-password', {
+    username: authStore.loginId, 
+    password: deletePassword.value 
+    });
+    if (response.data.success) {
+      console.log("게시판 삭제 모달 [boardName]: ", selectedBoardName);
 
-// 3. watch + 라이프 사이클
-  // 게시판 내용 업데이트 감지
-  watch(isBoardUpdated, async (newValue) => {
-    if (newValue) {
-      await fetchBoardDetail(editBoard.value.boardId);
-      isBoardUpdated.value = false;
+        await apiClient.delete(`/board/delete/${selectedBoardId.value}`, {
+            params: { 
+            deleterId: authStore.loginId,
+            boardName: selectedBoardName.value
+            }
+        });
+        showDeleteBoardModal.value = false;
+        deletePassword.value = '';
+        await getBoardList();
+    } else {
+        deleteError.value = '비밀번호가 일치하지 않습니다.';
     }
-  });
+  } catch (error) {
+    console.error('게시판을 삭제하지 못함: ', error);
+    deleteError.value = '게시판 삭제 중 문제가 발생했습니다. 다시 시도해 주세요.';
+  }
+};
 
-  // 관리자 삭제 모달 비밀번호 에러 메시지 초기화
-  watch(showDeleteBoardModal, (newVal) => {
-    if (!newVal) {
-        deleteError.value = '';
-    }
-  });
+// 게시판 내용 업데이트 감지
+watch(isBoardUpdated, async (newValue) => {
+  if (newValue) {
+    await fetchBoardDetail(editBoard.value.boardId);
+    isBoardUpdated.value = false;
+  }
+});
 
-  // 사용자가 비밀번호 입력을 다시 시작하면 에러 메시지 제거
-  watch(deletePassword, () => {
+// 관리자 삭제 모달 비밀번호 에러 메시지 초기화
+watch(showDeleteBoardModal, (newVal) => {
+  if (!newVal) {
       deleteError.value = '';
-  });
+  }
+});
 
-  onMounted(() => {
-    selectAllCategories();
-    getBoardList();
-    fetchPosts();
-  });
+// 사용자가 비밀번호 입력을 다시 시작하면 에러 메시지 제거
+watch(deletePassword, () => {
+    deleteError.value = '';
+});
+
+onMounted(() => {
+  selectAllCategories();
+  getBoardList();
+  fetchPosts();
+});
 </script>
 
 <style lang="scss" scoped>
