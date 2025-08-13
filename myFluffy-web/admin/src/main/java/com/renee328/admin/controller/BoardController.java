@@ -2,9 +2,13 @@ package com.renee328.admin.controller;
 
 import com.renee328.dto.BbsCategoryDto;
 import com.renee328.dto.BoardDto;
+import com.renee328.dto.LoginRequest;
 import com.renee328.service.BoardService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Map;
 
@@ -57,16 +61,27 @@ public class BoardController {
     }
 
     // 게시판 수정하기
-    @PutMapping("/update/{boardId}")
-    public ResponseEntity<?> updateBoard(@RequestBody BoardDto boardDto) {
+    @PutMapping("/{boardId}")
+    public ResponseEntity<?> updateBoard(@PathVariable Long boardId,
+                                         @RequestBody BoardDto boardDto) {
+        boardDto.setBoardId(boardId);
         boardService.updateBoard(boardDto);
         return ResponseEntity.ok(Map.of("message", "게시판이 업데이트되었습니다."));
     }
 
     // 게시판 삭제하기
-    @DeleteMapping("/delete/{boardId}")
-    public ResponseEntity<?> deleteBoard(@PathVariable Long boardId, @RequestParam String deleterId, @RequestParam String boardName) {
-        boardService.deleteBoard(boardId, deleterId, boardName);
+    @DeleteMapping("/{boardId}")
+    public ResponseEntity<?> deleteBoard(@PathVariable Long boardId,
+                                         @RequestBody LoginRequest passwordRequest,
+                                         Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        if (passwordRequest == null || passwordRequest.getPassword() == null || passwordRequest.getPassword().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비밀번호를 입력하세요.");
+        }
+        String deleterLoginId = authentication.getName();
+        boardService.deleteBoard(boardId, deleterLoginId, passwordRequest.getPassword());
         return ResponseEntity.ok(Map.of("message", "게시판이 삭제되었습니다."));
     }
 

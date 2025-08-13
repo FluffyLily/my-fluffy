@@ -143,6 +143,11 @@
         GROUP BY postDate
         ORDER BY postDate ASC
     </select>
+
+    <!-- 게시판에 속한 게시글 개수 -->
+    <select id="countPostsByBoardId" parameterType="long" resultType="int">
+        SELECT COUNT(*) FROM posts WHERE BOARD_ID = #{boardId}
+    </select>
     
     <!-- 게시글 작성하기 -->
     <insert id="insertPost" parameterType="com.renee328.dto.PostDto" useGeneratedKeys="true" keyProperty="postId" keyColumn="POST_ID">
@@ -215,9 +220,9 @@
         WHERE POST_ID = #{postId}
     </update>
 
-    <!-- 게시글 내용만 조회하기 -->
-    <select id="getPostContentById" parameterType="java.lang.Long" resultType="string">
-        SELECT CONTENT FROM posts WHERE POST_ID = #{postId}
+    <!-- 게시글 제목만 조회하기 -->
+    <select id="getPostTitleById" parameterType="java.lang.Long" resultType="String">
+        SELECT TITLE FROM posts WHERE POST_ID = #{postId}
     </select>
 
     <!-- 게시글 삭제하기 -->

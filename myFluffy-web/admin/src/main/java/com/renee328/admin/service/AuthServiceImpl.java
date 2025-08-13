@@ -14,8 +14,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -28,8 +26,6 @@ public class AuthServiceImpl implements AuthService {
     private final TokenRepository tokenRepository;
     private final UserDetailsServiceImpl userDetailsService;
     private final PasswordEncoder passwordEncoder;
-    private static final Logger logger = LoggerFactory.getLogger(AuthServiceImpl.class);
-
 
     public AuthServiceImpl(JwtTokenService jwtTokenService, TokenRepository tokenRepository, UserDetailsServiceImpl userDetailsService, PasswordEncoder passwordEncoder) {
         this.jwtTokenService = jwtTokenService;

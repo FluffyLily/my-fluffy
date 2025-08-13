@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
+import java.util.Locale;
+
 import static com.renee328.admin.util.FilterConstants.*;
 
 public class BlockMaliciousRequestFilter extends OncePerRequestFilter {
@@ -21,91 +23,59 @@ public class BlockMaliciousRequestFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        String uri = request.getRequestURI();
-        String userAgent = request.getHeader("User-Agent");
-        String ip = request.getRemoteAddr();
+        final String path = request.getRequestURI();
+        final String method = request.getMethod();
+        final String userAgent = request.getHeader("User-Agent");
+        final String ip = request.getRemoteAddr();
+        final String uri = path.toLowerCase(Locale.ROOT);
 
-        // 차단할 URI 포함 여부
-        for (String pattern : BLOCKED_URI_PATTERNS) {
-            if (uri.toLowerCase().contains(pattern)) {
-                log.warn("[허용되지 않는 URI 패턴 경로로 접근] IP: {}, URI: {}, 패턴: {}", ip, uri, pattern);
-                response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 허용되지 않는 URI 경로로 접근함.");
-                return;
-            }
-        }
-
-        // admin으로 시작하는 경로 차단 (단, /api/admin/**는 제외)
-        if ((uri.equals("/admin") || uri.startsWith("/admin/")) && !uri.startsWith("/api/admin")) {
-            log.warn("[로그인하지 않고 관리자(/admin) 엔드포인트로 접근] IP: {}, URI: {}", ip, uri);
-            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 로그인하지 않고 관리자(/admin) 경로로 접근함.");
-            return;
-        }
-
-        // login으로 시작하는 경로 차단 (단, /api/auth/login은 제외)
-        if (!uri.startsWith("/api/auth") && (uri.equals("/login") || uri.startsWith("/login/"))) {
-            log.warn("[허용되지 않는 로그인(/login) 엔드포인트로 접근] IP: {}, URI: {}", ip, uri);
-            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 허용되지 않는 로그인(/login) 경로로 접근함.");
-            return;
-        }
-
-        // 단일 경로 허용
-        if (ALLOWED_EXACT_PATHS.contains(uri)) {
+        // CORS 프리플라이트는 통과
+        if ("OPTIONS".equalsIgnoreCase(method)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 허용된 경로 접두사만 통과
-        boolean allowed = ALLOWED_PREFIXES.stream().anyMatch(uri::startsWith);
-        if (!allowed) {
-            log.warn("[허용되지 않은 접두사로 시작하는 경로로 접근] IP: {}, URI: {}", ip, uri);
-            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 허용되지 않은 경로로 접근함.");
+        // 의심 JS 이름 패턴
+        if (SUSPICIOUS_JS_REGEX != null && SUSPICIOUS_JS_REGEX.matcher(uri).matches()) {
+            log.warn("[의심 JS 요청] ip={}, uri={}", ip, path);
+            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 의심스러운 정적 리소스 요청.");
             return;
         }
 
-        // 의심스러운 파일 확장자 접근 차단
-        if (uri.endsWith(".php") || uri.endsWith(".env") || uri.endsWith(".bak")) {
-            log.warn("[의심스러운 파일 확장자 접근] IP: {}, URI: {}", ip, uri);
-            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 의심스러운 파일 요청 차단.");
+        // 의심스러운 파일 확장자
+        if (BLOCKED_EXTENSIONS.stream().anyMatch(uri::endsWith)) {
+            log.warn("[의심스러운 확장자 요청] ip={}, uri={}", ip, path);
+            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 의심스러운 파일 요청.");
             return;
         }
 
-        // 의심스러운 JS 리소스 요청 차단
-        if (uri.matches("^/(jquery|bootstrap|config|env|main).*\\.js$")) {
-            log.warn("[의심스러운 JS 리소스 요청 탐지] IP: {}, URI: {}", ip, uri);
-            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 존재하지 않는 정적 리소스를 요청함.");
+        // /api/** 가 아니면 검사 스킵 (SPA 라우트/정적 리소스는 통과)
+        if (!path.startsWith("/api/")) {
+            filterChain.doFilter(request, response);
             return;
         }
 
-        // User-Agent 누락 차단
-        if (userAgent == null || userAgent.trim().isEmpty()) {
-            log.warn("[User-Agent 없음] IP: {}, URI: {}", ip, uri);
-            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: User-Agent 누락됨.");
+        // 차단 대상 URI 패턴 포함
+        if (BLOCKED_URI_PATTERNS.stream().anyMatch(uri::contains)) {
+            log.warn("[차단 URI 패턴] ip={}, uri={}", ip, path);
+            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 허용되지 않는 URI 경로.");
             return;
         }
 
-        // 비정상 User-Agent 차단
+        // User-Agent 체크
+        if (REQUIRE_USER_AGENT && (userAgent == null || userAgent.trim().isEmpty())) {
+            log.warn("[UA 누락] ip={}, uri={}", ip, path);
+            response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: User-Agent 누락.");
+            return;
+        }
         if (userAgent != null) {
-            String ua = userAgent.toLowerCase();
-            String uaNormalized = ua.replaceAll("[^a-z0-9]", "");
-
-            // 전역 User-Agent 필터링
-            for (String badUserAgent : BLOCKED_USER_AGENTS) {
-                if (ua.contains(badUserAgent) || uaNormalized.contains(badUserAgent)) {
-                    log.warn("[비정상적인 User-Agent 접근] IP: {}, UA: {}, URI: {}", ip, userAgent, uri);
-                    response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 비정상적인 User-Agent.");
-                    return;
-                }
-            }
-
-            // 정적 리소스 접근 시 UA 추가 필터링
-            if ((uri.startsWith("/assets") || uri.startsWith("/ckeditor5-custom"))) {
-                for (String badUserAgent : BLOCKED_USER_AGENTS) {
-                    if (ua.contains(badUserAgent) || uaNormalized.contains(badUserAgent)) {
-                        log.warn("[정적 리소스에 비정상 UA 접근 차단] IP: {}, UA: {}, URI: {}", ip, userAgent, uri);
-                        response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 비정상 UA로 정적 리소스 접근함.");
-                        return;
-                    }
-                }
+            final String ua = userAgent.toLowerCase(Locale.ROOT);
+            final String uaNorm = ua.replaceAll("[^a-z0-9]", "");
+            if (BLOCKED_USER_AGENTS.stream().anyMatch(bad ->
+                    ua.contains(bad) || uaNorm.contains(bad))) {
+                log.warn("[차단 UA] ip={}, ua={}, uri={}", ip, userAgent, path);
+                response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 비정상적인 User-Agent.");
+                return;
             }
         }
 

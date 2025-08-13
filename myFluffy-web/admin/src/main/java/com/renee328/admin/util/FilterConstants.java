@@ -1,6 +1,7 @@
 package com.renee328.admin.util;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class FilterConstants {
 
@@ -8,7 +9,10 @@ public class FilterConstants {
     public static final List<String> BLOCKED_URI_PATTERNS = List.of(
             "/.git", ".env", "/php", "/HNAP1", "/shell", "/wp-", "/actuator", "/cgi-bin",
             "/p/u", "/doAuthentication", "/.well-known", "/boaform", "/setup.cgi",
-            "/admin/config", "/debug", "/config", "/passwd", "/robots.txt" );
+            "/admin/config", "/debug", "/config", "/passwd" );
+
+    // 의심스러운 파일 확장자
+    public static final List<String> BLOCKED_EXTENSIONS = List.of(".php", ".env", ".bak");
 
     // 차단 대상 User-Agent (공격 봇/스크래퍼 등)
     public static final List<String> BLOCKED_USER_AGENTS = List.of(
@@ -26,13 +30,11 @@ public class FilterConstants {
             "internetmeasurement", "internet-measurement", "expanse", "xpanse"
     );
 
-    // 정확히 일치하는 단일 허용 경로
-    public static final List<String> ALLOWED_EXACT_PATHS = List.of(
-            "/", "/index.html", "/favicon.png", "/error"
-    );
+    // User-Agent 필수 여부
+    public static final boolean REQUIRE_USER_AGENT = true;
 
-    // 허용된 접두사 경로 (이걸로 startsWith 검증)
-    public static final List<String> ALLOWED_PREFIXES = List.of(
-            "/api", "/assets", "/ckeditor5-custom", "/uploads"
-    );
+    // 의심스러운 JS 요청 패턴 (필요 없으면 null 가능)
+    public static final Pattern SUSPICIOUS_JS_REGEX =
+            Pattern.compile("^/(jquery|bootstrap|config|env|main).*\\.js$", Pattern.CASE_INSENSITIVE);
+
 }

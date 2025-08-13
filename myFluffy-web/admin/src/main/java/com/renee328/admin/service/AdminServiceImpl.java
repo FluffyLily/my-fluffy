@@ -1,17 +1,20 @@
 package com.renee328.admin.service;
 
+import com.renee328.admin.security.CustomUserDetails;
 import com.renee328.dto.AdminDto;
-import com.renee328.dto.LoginRequest;
 import com.renee328.mapper.AdminMapper;
 import com.renee328.mapper.AuthMapper;
 import com.renee328.service.AdminService;
 import com.renee328.admin.security.SecurityUtil;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
-import java.util.Map;
+
 
 @Service
 @Transactional(readOnly = true)
@@ -87,49 +90,61 @@ public class AdminServiceImpl implements AdminService {
     // 관리자 본인 계정 비밀번호 변경
     @Transactional
     @Override
-    public void updateMyPassword(Long userId, AdminDto adminDto) {
-        adminDto.setLoginPassword(passwordEncoder.encode(adminDto.getLoginPassword()));
-        adminMapper.updateMyPassword(userId, adminDto);
+    public void changeMyPassword(String loginId, String currentPassword, String newPassword) {
+        AdminDto admin = authMapper.getByUsername(loginId);
+        if (admin == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        if (!passwordEncoder.matches(currentPassword, admin.getLoginPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 비밀번호가 일치하지 않습니다.");
+        }
+        if (passwordEncoder.matches(newPassword, admin.getLoginPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이전 비밀번호와 동일합니다.");
+        }
+
+        String encodedPassword = passwordEncoder.encode(newPassword);
+
+        AdminDto updatedAdmin = new AdminDto();
+        updatedAdmin.setLoginPassword(encodedPassword);
+        updatedAdmin.setUpdatedBy(admin.getUserId());
+
+        adminMapper.updateMyPassword(admin.getUserId(), updatedAdmin);
     }
 
     // 관리자 계정 삭제
     @Transactional
-    @Override
-    public void deleteAdmin(String deletedId, String deleterId, Long userId) {
-        AdminDto deleter = adminMapper.findByLoginId(deleterId);
-        AdminDto target = adminMapper.findByLoginId(deletedId);
+    public void deleteAdmin(Long targetUserId, String rawPassword) {
+        // 1. 현재 로그인 사용자
+        CustomUserDetails authentication = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String deleterLoginId = authentication.getUsername();
+
+        // 2. 비밀번호 검증
+        AdminDto deleter = authMapper.getByUsername(deleterLoginId);
+        if (deleter == null || !passwordEncoder.matches(rawPassword, deleter.getLoginPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다.");
+        }
+
+        // 3. 최고 관리자/본인 계정/권한 레벨 검증
+        AdminDto target = adminMapper.findByUserId(targetUserId);
+        String deletedLoginId = target.getLoginId();
 
         if (!"ROLE_SUPER_ADMIN".equals(deleter.getRoleId())) {
             throw new AccessDeniedException("최고 관리자만 삭제할 수 있습니다.");
         }
 
-        if (deleterId.equals(deletedId)) {
+        if (deleterLoginId.equals(deletedLoginId)) {
             throw new IllegalArgumentException("자기 자신은 삭제할 수 없습니다.");
         }
 
         int deleterPriority = adminMapper.getRolePriority(deleter.getRoleId());
         int targetPriority = adminMapper.getRolePriority(target.getRoleId());
-
         if (deleterPriority <= targetPriority) {
             throw new AccessDeniedException("동일하거나 높은 권한의 관리자는 삭제할 수 없습니다.");
         }
-        adminMapper.logAdminDeletion(deletedId, deleterId);
-        adminMapper.deleteAdmin(userId);
-    }
 
-    // 비밀번호 인증
-    @Override
-    public Map<String, Boolean> verifyPassword(LoginRequest passwordRequest) {
-
-        if (passwordRequest.getUsername() == null || passwordRequest.getUsername().isEmpty()) {
-            throw new IllegalArgumentException("로그인 아이디가 제공되지 않았습니다.");
-        }
-
-        String loginId = passwordRequest.getUsername();
-        AdminDto adminDto = authMapper.getByUsername(loginId);
-
-        boolean isValidPassword = adminDto != null && passwordEncoder.matches(passwordRequest.getPassword(), adminDto.getLoginPassword());
-        return Map.of("success", isValidPassword);
+        // 4. 삭제
+        adminMapper.logAdminDeletion(deletedLoginId, deleterLoginId);
+        adminMapper.deleteAdmin(targetUserId);
     }
 
 }

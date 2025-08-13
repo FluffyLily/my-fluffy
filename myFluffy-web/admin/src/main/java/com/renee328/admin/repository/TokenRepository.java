@@ -19,13 +19,13 @@ public class TokenRepository {
     // Access Token 저장 (만료 시간 설정)
     public void saveAccessToken(String loginId, String accessToken, long accessTokenExpirationTime) {
         String key = "ACCESS_TOKEN:" + loginId;
-        redisTemplate.opsForValue().set(key, accessToken, accessTokenExpirationTime, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(key, accessToken, accessTokenExpirationTime, TimeUnit.MILLISECONDS);
     }
 
     // Refresh Token 저장
     public void saveRefreshToken(String loginId, String refreshToken, long refreshTokenExpirationTime) {
         String key = "REFRESH_TOKEN:" + loginId;
-        redisTemplate.opsForValue().set(key, refreshToken, refreshTokenExpirationTime, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(key, refreshToken, refreshTokenExpirationTime, TimeUnit.MILLISECONDS);
     }
 
     // Access Token 조회

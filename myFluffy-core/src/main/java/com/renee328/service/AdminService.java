@@ -1,9 +1,7 @@
 package com.renee328.service;
 
 import com.renee328.dto.AdminDto;
-import com.renee328.dto.LoginRequest;
 import java.util.List;
-import java.util.Map;
 
 public interface AdminService {
     // 아이디 중복 확인
@@ -22,12 +20,8 @@ public interface AdminService {
     void updateAdmin(Long userId, AdminDto adminDto);
 
     // 관리자 본인 계정 비밀번호 변경
-    void updateMyPassword(Long userId, AdminDto adminDto);
+    void changeMyPassword(String loginId, String currentPassword, String newPassword);
 
     // 관리자 계정 삭제
-    void deleteAdmin(String deletedId, String deleterId, Long userId);
-
-    // 비밀번호 인증
-    Map<String, Boolean> verifyPassword(LoginRequest passwordRequest);
-
+    void deleteAdmin(Long targetUserId, String rawPassword);
 }

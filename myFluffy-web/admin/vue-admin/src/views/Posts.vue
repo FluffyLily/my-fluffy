@@ -196,7 +196,6 @@ const fetchPosts = async () => {
     });
     totalCount.value = response.data.totalCount;
 
-    // offset 유효성 검사 및 보정 후 페이지 이동
     const maxOffset = Math.max(0, (totalPages.value - 1)) * searchCondition.limit;
     if (searchCondition.offset > maxOffset) {
       searchCondition.offset = 0;

@@ -24,7 +24,6 @@ public class NoticeController {
 
     // 공지 목록 & 개수 조회 (운영자 이상)
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_OPERATOR', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public Map<String, Object> getAllNotices(@RequestBody PostSearchCondition searchCondition) {
         List<NoticeDto> noticeList = noticeService.getAllNotices(searchCondition);
         int totalCount = noticeService.getNoticesCount(searchCondition);
@@ -36,7 +35,6 @@ public class NoticeController {
 
     // 대시보드 최근 공지 조회
     @GetMapping("/dashboard")
-    @PreAuthorize("hasAnyAuthority('ROLE_OPERATOR', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<NoticeDto> getRecentNotice() {
         NoticeDto recentNotice = noticeService.getRecentNotice();
         return ResponseEntity.ok(recentNotice);
@@ -44,7 +42,6 @@ public class NoticeController {
 
     // 공지 세부 내용 조회
     @GetMapping("/detail/{noticeId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_OPERATOR', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<NoticeDto> getNoticeDetails(@PathVariable Long noticeId) {
         NoticeDto noticeDetails = noticeService.getNoticeDetails(noticeId);
         return ResponseEntity.ok(noticeDetails);

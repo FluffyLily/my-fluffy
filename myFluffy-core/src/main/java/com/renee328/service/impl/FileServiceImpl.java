@@ -23,6 +23,8 @@ public class FileServiceImpl implements FileService {
 
     @Value("${file.upload.base-dir}")
     private String baseDir;
+    @Value("${file.upload.base-url}")
+    private String baseUrl;
     private final PostImageMapper postImageMapper;
 
     private static final Logger log = LoggerFactory.getLogger(FileServiceImpl.class);
@@ -77,7 +79,7 @@ public class FileServiceImpl implements FileService {
             // 1. 저장
             file.transferTo(destination.toFile());
 
-            // 2. Tika로 MIME 검사
+            // 2. Tika MIME 검사
             Tika tika = new Tika();
             String detectedType = tika.detect(destination.toFile());
             if (!detectedType.startsWith("image/")) {
@@ -88,8 +90,8 @@ public class FileServiceImpl implements FileService {
             throw new RuntimeException("파일 저장 또는 검사 중 오류 발생", e);
         }
 
-
-        return datePath + "/" + savedFileName;
+        String publicUrl = baseUrl + "/" + datePath + "/" + savedFileName;
+        return publicUrl;
     }
 
     @Override
@@ -120,7 +122,7 @@ public class FileServiceImpl implements FileService {
                 .map(p -> p.replaceFirst("^/uploads/images/", ""))
                 .toList();
         // 해당 게시글에 저장된 이미지 경로 데이터베이스에서 가져오기
-        List<String> dbImagePaths = postImageMapper.getImageUrlsByPostId(postId); // 경로 예: uploads/images/2025/07/03/xxx.jpg
+        List<String> dbImagePaths = postImageMapper.getImageUrlsByPostId(postId); // 경로 예: /uploads/images/2025/07/03/xxx.jpg
 
         for (String dbImagePath : dbImagePaths) {
             String relativePath = dbImagePath.replaceFirst("^/uploads/images/", "");

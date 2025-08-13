@@ -108,12 +108,12 @@
         </div>
       </div>
 
-      <!-- 관리자 계정 수정 모달 -->
+      <!-- 관리자 계정 변경 모달 -->
       <div v-if="showEditModal" class="modal fade show d-flex justify-content-center align-items-center" style="display: block;" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">관리자 수정 
+              <h5 class="modal-title">관리자 수정
                 <span class="bg-light rounded px-2 text-warning fst-italic">({{ editForm.loginId }})</span>
               </h5>
               <button type="button" class="btn-close" aria-label="Close" @click="showEditModal = false"></button>
@@ -136,7 +136,7 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-warning" @click="updateAdmin">수정하기</button>
+              <button class="btn btn-warning" @click="updateAdmin">변경하기</button>
               <button class="btn btn-secondary" @click="showEditModal = false">취소</button>
             </div>
           </div>
@@ -176,11 +176,13 @@ import { ref, onMounted, computed, watch } from 'vue';
 import apiClient from '../api/axios.js';
 import { format } from 'date-fns';
 import { useAuthStore } from '../stores/auth';
+import { useToast } from 'vue-toastification';
 import { validatePassword } from '../util/passwordValidation.js';
 import { validateUsername } from '../util/usernameValidation.js';
 import { getRoleLevel, useCurrentUserRoleLevel, useAvailableRoles } from '../util/roleUtils.js';
 
 const authStore = useAuthStore();
+const toast = useToast();
 const admins = ref([]);
 const loading = ref(true);
 
@@ -217,7 +219,7 @@ const newAdmin = ref({
   updatedAt: '',
   isInitialized: false
 });
-// 관리자 계정 수정 폼
+// 관리자 계정 변경 폼
 const editForm = ref({ 
   userId: null,
   loginId: '',
@@ -347,7 +349,7 @@ const createAdmin = async () => {
   }
 };
 
-// 관리자 계정 수정 모달 열기
+// 관리자 계정 변경 모달 열기
 const openEditModal = (admin) => {
   editForm.value = { 
     userId: admin.userId,
@@ -360,13 +362,12 @@ const openEditModal = (admin) => {
   showEditModal.value = true;
 };
 
-// 관리자 계정 수정
+// 관리자 계정 변경
 const updateAdmin = async () => {
   if (confirm("수정사항을 반영하시겠습니까?")) {
-    await apiClient.put(`/admin/update/${editForm.value.userId}`, editForm.value, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
-    });
+    await apiClient.put(`/admin/${editForm.value.userId}`, editForm.value);
     showEditModal.value = false;
+    toast.success("관리자 계정이 변경되었습니다.");
     fetchAdmins();
   }
 };
@@ -381,28 +382,26 @@ const openDeleteModal = (admin) => {
 // 관리자 계정 삭제
 const deleteAdmin = async () => {
   try {
-    const response = await apiClient.post('/admin/verify-password', {
-      username: authStore.loginId, 
-      password: deletePassword.value 
-    }, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` } 
-    });
-
-    if (response.data.success) {
-      await apiClient.delete(`/admin/delete/${deleteUserId.value}`, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        params: { 
-          deleterId: authStore.loginId,
-          deletedId: deleteLoginId.value
-        }
-      });
-      fetchAdmins();
-      showDeleteModal.value = false;
-      deletePassword.value = '';
-    } else {
-      deleteError.value = '비밀번호가 일치하지 않습니다.';
+    if (!deletePassword.value || deletePassword.value.trim().length === 0) {
+      deleteError.value = '비밀번호를 입력하세요.';
+      return;
     }
+    await apiClient.delete(`/admin/${deleteUserId.value}`, {
+      data: { password: deletePassword.value }
+    });
+    await fetchAdmins();
+    toast.success("관리자 계정이 삭제되었습니다.");
+    showDeleteModal.value = false;
+    deletePassword.value = '';
+    deleteError.value = '';
   } catch (error) {
+    if (error?.response?.status === 401 || error?.response?.status === 403) {
+      deleteError.value = '권한이 없거나 인증이 만료되었습니다. 다시 로그인 해주세요.';
+    } else if (error?.response?.status === 400) {
+      deleteError.value = error.response?.data?.message || '요청이 올바르지 않습니다.';
+    } else {
+      deleteError.value = '삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    }
     console.error(error);
   }
 };

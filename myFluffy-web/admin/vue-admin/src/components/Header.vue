@@ -40,14 +40,16 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import apiClient from "../api/axios";
 import { useAuthStore } from '../stores/auth';
 import { validatePassword } from '../util/passwordValidation';
+import { useToast } from 'vue-toastification';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const toast = useToast();
 const showProfileModal = ref(false);
 
 const profileForm = ref({
@@ -74,38 +76,41 @@ const isFormValid = computed(() => {
   );
 });
 
-// 현재 비밀번호 검증 함수
-const validateCurrentPassword = async (currentPassword, loginId) => {
-  try {
-    const response = await apiClient.post('/admin/verify-password', {
-      username: loginId,
-      password: currentPassword
-    });
-    return response.data.success;
-  } catch (error) {
-    currentPasswordError.value = "현재 비밀번호가 일치하지 않습니다.";
-    return false;
-  }
-};
-
 // 프로필 업데이트 (비밀번호 변경)
 const updateProfile = async () => {
-  if (confirm("비밀번호를 변경하시겠습니까?")) {
-    const isCurrentPasswordValid = await validateCurrentPassword(profileForm.value.currentPassword, profileForm.value.loginId);
-    if (!isCurrentPasswordValid) {
-      currentPasswordError.value = "현재 비밀번호가 일치하지 않습니다.";
+  if (!isFormValid.value || passwordError.value || passwordMismatch.value) {
+    return;
+  }
+  if (!confirm("비밀번호를 변경하시겠습니까?")) {
+    return;
+  }
+  try {
+    await apiClient.put('/admin/profile/password', {
+      currentPassword: profileForm.value.currentPassword,
+      newPassword: profileForm.value.loginPassword,
+    });
+    toast.success("비밀번호가 변경되었습니다.");
+    showProfileModal.value = false;
+  } catch (error) {
+    const status = error?.response?.status;
+    const msg = error?.response?.data?.message;
+
+    if (status === 400) {
+      if (msg && msg.includes('현재 비밀번호')) {
+        profileForm.value.currentPassword = '';
+        await nextTick();
+        currentPasswordError.value = '현재 비밀번호가 일치하지 않습니다.';
+      } else {
+        passwordError.value = msg || '요청이 올바르지 않습니다.';
+      }
       return;
     }
-    try {
-      await apiClient.put(`/admin/update-profile/${authStore.userId}`, profileForm.value);
-      alert("비밀번호가 변경되었습니다.");
-      showProfileModal.value = false;
-    } catch (error) {
-      console.error("비밀번호 변경 오류: ", error.response);
-      if (error.response && error.response.data) {
-        console.error("서버 응답: ", error.response.data);
-      }
+
+    if (status === 401 || status === 403) {
+      alert('권한이 없거나 인증이 만료되었습니다. 다시 로그인 해주세요.');
+      return;
     }
+    console.error("비밀번호 변경 오류: ", error);
   }
 };
 
@@ -143,8 +148,10 @@ watch(() => profileForm.value.loginPassword, async (newPassword) => {
   }
 });
 
-watch(() => profileForm.value.currentPassword, () => {
-  currentPasswordError.value = '';
+watch(() => profileForm.value.currentPassword, (newPassword) => {
+  if (newPassword && newPassword.length > 0) {
+    currentPasswordError.value = '';
+  }
 });
 </script>
 

@@ -17,8 +17,8 @@ public interface BoardMapper {
     // 카테고리별 게시판 목록 조회
     List<BoardDto> getBbsListByCategoryId(Long boardCategoryId);
 
-    // 게시판 아이디 조회
-    Long findBoardIdByName(String boardName);
+    // 게시판 이름 조회
+    String findBoardNameById(Long boardId);
 
     // 게시판 세부정보 조회
     BoardDto getBoardDetails(Long boardId);

@@ -33,12 +33,19 @@
               <font-awesome-icon :icon="['fas', 'plus']" style="color: var(--button-add-color)"/>
             </button>
           </div>
-          <ul class="menu-list" v-if="boardList.length > 0">
-            <li v-for="board in boardList" :key="board.boardId || board.boardName" 
-            :class="{ active: board.isActive }">
-              <span @click="goToBoardDetail(board)" style="cursor: pointer;">{{ board.boardName }}</span>
-            </li>
-          </ul>
+          <div class="menu-list">
+            <div v-if="boardList.length === 0" class="empty-message">
+              아직 게시판이 없습니다.
+            </div>
+            <div v-else>
+              <ul class="board-list">
+                <li v-for="board in boardList" :key="board.boardId || board.boardName" 
+                    :class="{ active: board.isActive }">
+                  <span @click="goToBoardDetail(board)" style="cursor: pointer;">{{ board.boardName }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
         <!-- 게시판 정보 영역 -->
         <div class="board-detail-container">
@@ -52,7 +59,7 @@
               <p><strong>수정한 날 :</strong> {{ formatDate(selectedBoard.updatedAt) }}</p>
               <button class="btn btn-warning me-2" @click="editBoardMenu(selectedBoard)">수정</button>
               <button v-if="canDeleteBoard" class="btn btn-danger"
-                @click="confirmDeleteBoardMenu(selectedBoard.boardId, selectedBoard.boardName)">
+                @click="confirmDeleteBoardMenu(selectedBoard)">
                 삭제
               </button>
             </div>
@@ -151,27 +158,40 @@
             </div>
           </div>
         </div>
-        <!-- 게시판 메뉴 삭제 모달 -->
+        <!-- 게시판 삭제 모달 -->
         <div v-if="showDeleteBoardModal" class="modal fade show d-flex justify-content-center align-items-center delete-modal" style="display: block;" tabindex="-1" role="dialog">
           <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title delete-title">게시판 삭제</h5>
-                <button type="button" class="btn-close" @click="showDeleteBoardModal = false"></button>
+                <button type="button" class="btn-close" @click="closeDeleteModal"></button>
               </div>
               <div class="modal-body">
                 <div class="mb-3">
-                  <label class="form-label d-block">관리자 비밀번호 확인</label>
-                  <input type="password" v-model="deletePassword" class="form-control mb-2" />
-                  <div v-if="deleteError" class="text-danger mb-3">{{ deleteError }}</div>
-                </div>
-                <div class="text-danger mb-3">
-                  <small>⚠️ 이 작업은 되돌릴 수 없습니다.</small>
+                  <div class="confirm-text">
+                    <strong>"{{ selectedBoard.boardName }}" 게시판을 정말 삭제하시겠습니까?</strong>
+                    <div class="note">(게시글이 있으면 삭제할 수 없습니다.)</div>
+                    <div class="sub">
+                      <span class="emoji" aria-hidden="true">⚠️</span>
+                      <span class="warn-text">이 작업은 되돌릴 수 없습니다.</span>
+                    </div>
+                  </div>
+                  <label class="form-label d-block mt-3">관리자 비밀번호 확인</label>
+                  <div class="password-input">
+                    <input
+                      type="password"
+                      v-model="deletePassword"
+                      ref="deletePasswordInput"
+                      class="form-control"
+                      @keyup.enter="deletePassword && deleteBoard()"
+                    />
+                  </div>
+                  <div v-if="deleteError" class="text-danger mt-2">{{ deleteError }}</div>
                 </div>
               </div>
               <div class="modal-footer">
                 <button class="btn btn-danger" @click="deleteBoard">삭제</button>
-                <button class="btn btn-secondary" @click="showDeleteBoardModal = false">닫기</button>
+                <button class="btn btn-secondary" @click="closeDeleteModal">닫기</button>
               </div>
             </div>
           </div>
@@ -188,10 +208,12 @@ import apiClient from '../api/axios.js';
 import { useAuthStore } from '../stores/auth.js';
 import { hasAnyRole } from '../util/roleUtils.js';
 import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toastification';
 
 // 기본 셋업
 const router = useRouter();
 const authStore = useAuthStore();
+const toast = useToast();
 const userId = authStore.userId;
 
 // 게시판 & 카테고리 목록
@@ -250,7 +272,6 @@ const selectedBoard = reactive({
 });
 const selectedCategory = ref(null);
 const selectedBoardId = ref(null);
-const selectedBoardName = ref('');
 
 // 게시판 수정 관련
 const editBoard = ref({
@@ -266,12 +287,14 @@ const showEditBoardModal = ref(false);
 const isBoardUpdated = ref(false);
 
 // 게시판 삭제 관련
+const deletePassword = ref('');
+const deleteError = ref('');
+const deletePasswordInput = ref(null);
+const showDeleteBoardModal = ref(false);
+
 const canDeleteBoard = computed(() => 
   hasAnyRole(authStore.roleId, ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'])
 );
-const deletePassword = ref('');
-const deleteError = ref('');
-const showDeleteBoardModal = ref(false);
 
 // 유효성 검사
 const isCategoryValid = computed(() => newCategory.value.boardCategoryName.trim().length > 0);
@@ -470,6 +493,7 @@ const createBoard = async () => {
       newBoard.value.boardName = '';
       newBoard.value.boardCategoryId = null;
       showCreateBoardModal.value = false;
+      toast.success("새로운 게시판이 추가되었습니다.");
     } catch (error) {
       console.error('게시판 추가 실패:', error);
     }
@@ -499,8 +523,7 @@ const updateBoard = async () => {
   }
   if (confirm("게시판을 수정하시겠습니까?")) {
     try {
-      await apiClient.put(`/board/update/${editBoard.value.boardId}`, {
-        boardId: editBoard.value.boardId,
+      await apiClient.put(`/board/${editBoard.value.boardId}`, {
         boardName: editBoard.value.boardName,
         boardCategoryId: editBoard.value.boardCategoryId,
         updatedBy: editBoard.value.updatedBy
@@ -550,16 +573,22 @@ const goToPostManagementWithPostId = (postId) => {
   });
 }
 
-// 게시판 삭제
-const confirmDeleteBoardMenu = (boardId, boardName) => {
-  selectedBoardId.value = boardId;
-  selectedBoardName.value = boardName;
+const confirmDeleteBoardMenu = async (board) => {
+  selectedBoardId.value = board.boardId;
   showDeleteBoardModal.value = true;
+  await nextTick();
+  deletePasswordInput.value?.focus();
 };
   
+const closeDeleteModal = () => {
+  showDeleteBoardModal.value = false;
+  deletePassword.value = '';
+  deleteError.value = '';
+};
+
 // 게시판 삭제하기
 const deleteBoard = async () => {
-  if (!selectedBoardId) {
+  if (!selectedBoardId.value) {
     console.error('삭제할 게시판이 선택되지 않았습니다.');
     return;
   }
@@ -568,30 +597,68 @@ const deleteBoard = async () => {
     return;
   }
   try {
-    const response = await apiClient.post('/admin/verify-password', {
-    username: authStore.loginId, 
-    password: deletePassword.value 
+    await apiClient.delete(`/board/${selectedBoardId.value}`, {
+      data: { password: deletePassword.value }
     });
-    if (response.data.success) {
-      console.log("게시판 삭제 모달 [boardName]: ", selectedBoardName);
 
-        await apiClient.delete(`/board/delete/${selectedBoardId.value}`, {
-            params: { 
-            deleterId: authStore.loginId,
-            boardName: selectedBoardName.value
-            }
-        });
-        showDeleteBoardModal.value = false;
-        deletePassword.value = '';
-        await getBoardList();
-    } else {
-        deleteError.value = '비밀번호가 일치하지 않습니다.';
-    }
+    showDeleteBoardModal.value = false;
+    deletePassword.value = '';
+    selectedBoardId.value = null;
+    await getBoardList();
+    Object.assign(selectedBoard, {
+      boardId: null,
+      boardName: '',
+      createdAt: '',
+      createdBy: null,
+      createdByLoginId: '',
+      updatedAt: '',
+      updatedBy: null,
+      updatedByLoginId: '',
+      categories: []
+    });
+    searchCondition.boardId = null;
+    updateActiveBoard();
+    toast.success("게시판이 삭제되었습니다.");
+    await fetchPosts();
+
   } catch (error) {
+    const status = error?.response?.status;
+    const msg = error?.response?.data?.message;
+
+    if (status === 400) {
+      if (msg && msg.includes('비밀번호')) {
+        deletePassword.value = '';
+        await nextTick();
+        deleteError.value = '비밀번호가 일치하지 않습니다.';
+        deletePasswordInput.value?.focus(); 
+      } else {
+        deleteError.value = msg || '요청이 올바르지 않습니다.';
+      }
+      return;
+    }
+    // 게시글이 있으면 게시판 삭제 불가
+    if (status === 409) {
+      deleteError.value = msg || '해당 게시판에 게시글이 남아 있어 삭제할 수 없습니다.';
+      return;
+    }
+
+    if (status === 404) {
+      deleteError.value = '게시판을 찾을 수 없습니다.';
+    } else if ([401, 403].includes(status)) {
+      deleteError.value = '권한이 없거나 인증이 만료되었습니다. 다시 로그인 해주세요.';
+    } else {
+      deleteError.value = '게시판 삭제 중 문제가 발생했습니다. 다시 시도해 주세요.';
+    }
+
     console.error('게시판을 삭제하지 못함: ', error);
-    deleteError.value = '게시판 삭제 중 문제가 발생했습니다. 다시 시도해 주세요.';
   }
 };
+
+onMounted(() => {
+  selectAllCategories();
+  getBoardList();
+  fetchPosts();
+});
 
 // 게시판 내용 업데이트 감지
 watch(isBoardUpdated, async (newValue) => {
@@ -601,26 +668,20 @@ watch(isBoardUpdated, async (newValue) => {
   }
 });
 
-// 관리자 삭제 모달 비밀번호 에러 메시지 초기화
-watch(showDeleteBoardModal, (newVal) => {
-  if (!newVal) {
-      deleteError.value = '';
-  }
-});
-
 // 사용자가 비밀번호 입력을 다시 시작하면 에러 메시지 제거
 watch(deletePassword, () => {
     deleteError.value = '';
 });
-
-onMounted(() => {
-  selectAllCategories();
-  getBoardList();
-  fetchPosts();
-});
 </script>
 
 <style lang="scss" scoped>
+
+.color-pink    { background-color: var(--blush-pink); }
+.color-avocado { background-color: var(--avocado-frost); }
+.color-violet  { background-color: var(--violet-deep); }
+.color-seafoam { background-color: var(--seafoam-teal); }
+.color-honey   { background-color: var(--sun-honey); }
+
 .page-wrapper {
   display: flex;
   flex-direction: column;
@@ -678,9 +739,9 @@ onMounted(() => {
             color: var(--button-add-color);
             transition: background-color 0.3s, border-color 0.3s;
           }
-        }
+        }    
 
-        .menu-list {
+        .board-list {
           list-style-type: none;
           padding: 0;
           overflow-y: auto;
@@ -704,6 +765,18 @@ onMounted(() => {
               color: white;
               box-shadow: 0 5px 10px var(--shadow-color);
             }
+          }
+        }
+
+        .menu-list {
+          .empty-message {
+            text-align: center;
+            padding: 2.5rem 0;
+            font-style: italic;
+            color: var(--black-pearl);
+            background-color: var(--melon-icecream);
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
           }
         }
       }
@@ -927,12 +1000,50 @@ p {
   }
 }
 
+// ===== 삭제 모달 =====
+.delete-modal {
+  .confirm-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    color: var(--black-pearl);
+    background-color: var(--almond-cream, #fff8d6);
+    border: 1px solid rgba(0,0,0,0.05);
 
-// ===== 카테고리 컬러 클래스 =====
-.color-pink    { background-color: var(--blush-pink); }
-.color-avocado { background-color: var(--avocado-frost); }
-.color-violet  { background-color: var(--violet-deep); }
-.color-seafoam { background-color: var(--seafoam-teal); }
-.color-honey   { background-color: var(--sun-honey); }
+    strong { font-size: 1.05rem; }
+    .note {
+      margin-top: 2px;
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+    .sub {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      color: #a94442;
+
+      .emoji {
+        font-size: 1.1rem;
+        line-height: 1;
+      }
+
+      .warn-text {
+        display: inline-block;
+      }
+    }
+  }
+
+  .password-input {
+    max-width: 320px;
+    margin: 0 auto;
+
+    .form-control { width: 100%; }
+  }
+}
 
 </style>

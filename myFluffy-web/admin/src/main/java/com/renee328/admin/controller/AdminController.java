@@ -2,10 +2,14 @@ package com.renee328.admin.controller;
 
 import com.renee328.dto.AdminDto;
 import com.renee328.dto.LoginRequest;
+import com.renee328.dto.PasswordChangeRequest;
 import com.renee328.service.AdminService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
@@ -53,39 +57,41 @@ public class AdminController {
     }
 
     // 관리자 계정 수정
-    @PutMapping("/update/{userId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @PutMapping("/{userId}")
     public ResponseEntity<?> updateAdmin(@PathVariable Long userId, @RequestBody AdminDto adminDto) throws AccessDeniedException {
         adminService.updateAdmin(userId, adminDto);
         return ResponseEntity.ok(Map.of("message", "관리자 계정이 업데이트되었습니다."));
     }
 
     // 관리자 본인 계정 비밀번호 변경
-    @PutMapping("/update-profile/{userId}")
-    public ResponseEntity<?> updateMyPassword(@PathVariable Long userId, @RequestBody AdminDto adminDto) throws AccessDeniedException {
-        adminService.updateMyPassword(userId, adminDto);
-        return ResponseEntity.ok(Map.of("message", "관리자 계정의 비밀번호가 업데이트되었습니다."));
-    }
-
-    // 비밀번호 인증 절차
-    @PostMapping("/verify-password")
-    public ResponseEntity<Map<String, Boolean>> verifyPassword(@RequestBody LoginRequest passwordRequest) {
-        if (passwordRequest.getUsername() == null || passwordRequest.getPassword() == null) {
-            return ResponseEntity.badRequest().body(Map.of("success", false));
+    @PutMapping("/profile/password")
+    public ResponseEntity<?> changeMyPassword(@RequestBody PasswordChangeRequest passwordRequest,
+                                              Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        if (passwordRequest == null || passwordRequest.getCurrentPassword() == null || passwordRequest.getCurrentPassword().isBlank()
+                || passwordRequest.getNewPassword() == null || passwordRequest.getNewPassword().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 비밀번호와 새 비밀번호를 모두 입력하세요.");
         }
 
-        Map<String, Boolean> response = adminService.verifyPassword(passwordRequest);
-        return ResponseEntity.ok(response);
+        String loginId = authentication.getName();
+        adminService.changeMyPassword(loginId, passwordRequest.getCurrentPassword(), passwordRequest.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "비밀번호가 변경되었습니다."));
     }
 
     // 관리자 계정 삭제
-    @DeleteMapping("/delete/{userId}")
+    @DeleteMapping("/{userId}")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<?> deleteAdmin(@PathVariable Long userId,
-                                         @RequestParam String deleterId,
-                                         @RequestParam String deletedId) throws AccessDeniedException {
-        adminService.deleteAdmin(deletedId, deleterId, userId);
+                                         @RequestBody LoginRequest passwordRequest) throws AccessDeniedException {
+
+        if (passwordRequest == null || passwordRequest.getPassword() == null || passwordRequest.getPassword().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비밀번호를 입력하세요.");
+        }
+
+        String password = passwordRequest.getPassword();
+        adminService.deleteAdmin(userId, password);
         return ResponseEntity.ok(Map.of("message", "관리자 계정이 삭제되었습니다."));
     }
-
 }

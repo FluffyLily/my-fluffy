@@ -1,18 +1,18 @@
 package com.renee328.service.impl;
 
+import com.renee328.dto.AdminDto;
 import com.renee328.dto.PostDto;
 import com.renee328.dto.PostImageDto;
 import com.renee328.dto.PostSearchCondition;
-import com.renee328.mapper.PostImageMapper;
-import com.renee328.mapper.PostMapper;
-import com.renee328.mapper.PostTagMapper;
-import com.renee328.mapper.TagMapper;
+import com.renee328.mapper.*;
 import com.renee328.service.FileService;
 import com.renee328.service.PostService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,14 +24,24 @@ public class PostServiceImpl implements PostService {
     private final TagMapper tagMapper;
     private final PostTagMapper postTagMapper;
     private final PostImageMapper postImageMapper;
+    private final AuthMapper authMapper;
     private final FileService fileService;
-    private static final Logger log = LoggerFactory.getLogger(FileServiceImpl.class);
-    public PostServiceImpl(PostMapper postMapper, TagMapper tagMapper, PostTagMapper postTagMapper, PostImageMapper postImageMapper, FileService fileService) {
+    private final PasswordEncoder passwordEncoder;
+
+    public PostServiceImpl(PostMapper postMapper,
+                           TagMapper tagMapper,
+                           PostTagMapper postTagMapper,
+                           PostImageMapper postImageMapper,
+                           AuthMapper authMapper,
+                           FileService fileService,
+                           PasswordEncoder passwordEncoder) {
         this.postMapper = postMapper;
         this.tagMapper = tagMapper;
         this.postTagMapper = postTagMapper;
         this.postImageMapper = postImageMapper;
+        this.authMapper = authMapper;
         this.fileService = fileService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // 게시글 목록 조회하기 (필터, 검색, 정렬 조건 적용)
@@ -103,11 +113,23 @@ public class PostServiceImpl implements PostService {
 
     // 게시글 삭제하기
     @Transactional
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN','ROLE_ADMIN','ROLE_MANAGER')")
     @Override
-    public void deletePost(Long postId, String deleterId, String postTitle) {
+    public void deletePost(Long postId, String deleterLoginId, String rawPassword) {
+
+        AdminDto deleter = authMapper.getByUsername(deleterLoginId);
+        if (deleter == null || !passwordEncoder.matches(rawPassword, deleter.getLoginPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다.");
+        }
+
+        String postTitle = postMapper.getPostTitleById(postId);
+        if (postTitle == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다.");
+        }
+
         // 서버에서 이미지 파일 지우기
         fileService.cleanupUnusedImages(postId, Collections.emptyList());
-        postMapper.logPostDeletion(deleterId, postTitle);
+        postMapper.logPostDeletion(deleterLoginId, postTitle);
         postTagMapper.deleteByPostId(postId);
         postImageMapper.deletePostImagesByPostId(postId);
         postMapper.deletePost(postId);
@@ -129,7 +151,7 @@ public class PostServiceImpl implements PostService {
         }
     }
 
-    // 게시글에 실제로 사용하지 않는 이미지 서버에서 삭제하기
+    // 게시글에서 더 이상 사용하지 않는 이미지 삭제(수정 시)
     private void cleanupUnusedImages(PostDto postDto, Long postId) {
         List<String> usedImages;
         if (postDto.getImages() != null) {

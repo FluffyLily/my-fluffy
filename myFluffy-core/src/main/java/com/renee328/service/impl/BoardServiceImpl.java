@@ -6,11 +6,15 @@ import com.renee328.dto.BoardDto;
 import com.renee328.mapper.AdminMapper;
 import com.renee328.mapper.BbsCategoryMapper;
 import com.renee328.mapper.BoardMapper;
+import com.renee328.mapper.PostMapper;
 import com.renee328.service.BoardService;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @Service
@@ -19,12 +23,20 @@ public class BoardServiceImpl implements BoardService {
 
     private final AdminMapper adminMapper;
     private final BoardMapper boardMapper;
+    private final PostMapper postMapper;
     private final BbsCategoryMapper bbsCategoryMapper;
+    private final PasswordEncoder passwordEncoder;
 
-    public BoardServiceImpl(AdminMapper adminMapper, BoardMapper boardMapper, BbsCategoryMapper bbsCategoryMapper) {
+    public BoardServiceImpl(AdminMapper adminMapper,
+                            BoardMapper boardMapper,
+                            PostMapper postMapper,
+                            BbsCategoryMapper bbsCategoryMapper,
+                            PasswordEncoder passwordEncoder) {
         this.adminMapper = adminMapper;
         this.boardMapper = boardMapper;
+        this.postMapper = postMapper;
         this.bbsCategoryMapper = bbsCategoryMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // 게시판 목록 조회하기
@@ -84,14 +96,27 @@ public class BoardServiceImpl implements BoardService {
     @Transactional
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     @Override
-    public void deleteBoard(Long boardId, String deleterId, String boardName) {
-        AdminDto deleter = adminMapper.findByLoginId(deleterId);
+    public void deleteBoard(Long boardId, String deleterLoginId, String rawPassword) {
+        AdminDto deleter = adminMapper.findByLoginId(deleterLoginId);
 
-        if (!"ROLE_SUPER_ADMIN".equals(deleter.getRoleId()) && !"ROLE_ADMIN".equals(deleter.getRoleId())) {
-            throw new AccessDeniedException("운영자는 삭제할 권한이 없습니다.");
+        if (deleter == null || !passwordEncoder.matches(rawPassword, deleter.getLoginPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다.");
         }
 
-        boardMapper.logBoardDeletion(deleterId, boardName);
+        String boardName = boardMapper.findBoardNameById(boardId);
+        if (boardName == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "게시판을 찾을 수 없습니다.");
+        }
+
+        int postCount = postMapper.countPostsByBoardId(boardId);
+        if (postCount > 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "해당 게시판에 게시글이 " + postCount + "건 남아 있어 삭제할 수 없습니다."
+            );
+        }
+
+        boardMapper.logBoardDeletion(deleterLoginId, boardName);
         boardMapper.deleteBoard(boardId);
     }
 

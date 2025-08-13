@@ -45,9 +45,9 @@
             board.BOARD_NAME;
     </select>
 
-    <!-- 게시판 아이디 조회 -->
-    <select id="findBoardIdByName" resultType="java.lang.Long">
-        SELECT BOARD_ID FROM bbs WHERE BOARD_NAME = #{boardName}
+    <!-- 게시판 이름 조회 -->
+    <select id="findBoardNameById" parameterType="java.lang.Long" resultType="String">
+        SELECT BOARD_NAME FROM bbs WHERE BOARD_ID = #{boardId}
     </select>
 
     <!-- 게시판 세부정보 조회 -->

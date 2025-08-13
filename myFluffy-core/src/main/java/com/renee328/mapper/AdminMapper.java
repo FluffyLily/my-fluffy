@@ -28,6 +28,6 @@ public interface AdminMapper {
 
     void deleteAdmin(Long userId);
 
-    void logAdminDeletion(@Param("deletedId") String deletedId, @Param("deleterId") String deleterId);
+    void logAdminDeletion(@Param("deletedLoginId") String deletedId, @Param("deleterLoginId") String deleterId);
 
 }

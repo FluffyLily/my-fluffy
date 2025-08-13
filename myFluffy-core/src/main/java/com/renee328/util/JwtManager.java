@@ -15,10 +15,10 @@ public class JwtManager {
     @Value("${security.jwt.secret-key}")
     private String SECRET_KEY;
     private static final Logger log = LoggerFactory.getLogger(JwtManager.class);
-    public String createToken(String loginId, long expirationTime, String role, Long userId, String userName) {
+    public String createToken(String loginId, long expirationTime, String roleId, Long userId, String userName) {
         return Jwts.builder()
                 .subject(loginId)
-                .claim("role", role)
+                .claim("role", roleId)
                 .claim("userId", userId)
                 .claim("name", userName)
                 .issuedAt(new Date())

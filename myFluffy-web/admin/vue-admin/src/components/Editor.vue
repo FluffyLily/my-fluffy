@@ -129,33 +129,33 @@
 
     <!-- 게시글 삭제 모달 -->
     <div v-if="showDeletePostModal" class="modal fade show d-flex justify-content-center align-items-center" style="display: block;" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">게시글 삭제</h5>
-          <button type="button" class="btn-close" @click="closeDeleteModal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label d-block">관리자 비밀번호 확인</label>
-            <input type="password" v-model="deletePassword" class="form-control mb-2" @keyup.enter="deletePassword && deletePost()"/>
-            <div v-if="deleteError" class="text-danger mb-3">{{ deleteError }}</div>
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">게시글 삭제</h5>
+            <button type="button" class="btn-close" @click="closeDeleteModal"></button>
           </div>
-          <div class="text-danger mb-3">
-            <small>⚠️ 이 작업은 되돌릴 수 없습니다.</small>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label d-block">관리자 비밀번호 확인</label>
+              <input type="password" v-model="deletePassword" ref="deletePasswordInput" class="form-control mb-2" @keyup.enter="deletePassword && deletePost()"/>
+              <div v-if="deleteError" class="text-danger mb-3">{{ deleteError }}</div>
+            </div>
+            <div class="text-danger mb-3">
+              <small>⚠️ 이 작업은 되돌릴 수 없습니다.</small>
+            </div>
           </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-danger" @click="deletePost">삭제</button>
-          <button class="btn btn-secondary" @click="closeDeleteModal">닫기</button>
+          <div class="modal-footer">
+            <button class="btn btn-danger" @click="deletePost">삭제</button>
+            <button class="btn btn-secondary" @click="closeDeleteModal">닫기</button>
+          </div>
         </div>
       </div>
-    </div>
     </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue'
 import Fuse from 'fuse.js';
 import apiClient from '../api/axios.js';
 import { useAuthStore } from '../stores/auth.js';
@@ -215,6 +215,12 @@ const tagSuggestions = ref([]);
 const tagInput = ref('');
 const isComposing = ref(false);
 
+// 삭제 관련 데이터
+const deletePassword = ref('');
+const deleteError = ref('');
+const deletePasswordInput = ref(null);
+const showDeletePostModal = ref(false);
+
 // fuse 설정
 const fuse = computed(() => new Fuse(allTags.value, {
   includeScore: true, // 결과에 유사도 점수를 포함
@@ -237,10 +243,6 @@ const canDeletePost = computed(() =>
     authStore.userId === newPost.createdBy
   )
 );
-
-const deletePassword = ref('');
-const deleteError = ref('');
-const showDeletePostModal = ref(false);
 
 const editorConfig = reactive({
   toolbar: {
@@ -316,11 +318,9 @@ class MyUploadAdapter {
           }
         }).then(response => {
           isUploading.value = false;
-          resolve({
-            default: `/uploads/images/${response.data.default}`
-          });
-          // 업로드된 이미지 URL 저장
-          uploadedImages.value.push(`/uploads/images/${response.data.default}`);
+          const imageUrl = response.data.imageUrl;
+          resolve({default: imageUrl});
+          uploadedImages.value.push(imageUrl);
         }).catch(err => {
           isUploading.value = false;
           uploadError.value = '이미지 업로드 실패';
@@ -422,9 +422,11 @@ const fetchPost = async () => {
   try {
     const response = await apiClient.get(`/post/detail/${props.postId}`);
     Object.assign(newPost, response.data);
-    // 이미지 정보 유지
+    // 이미지 정보 유지 (없으면 빈 배열로 초기화)
     if (response.data.images?.length) {
       newPost.images = response.data.images;
+    } else {
+      newPost.images = [];
     }
     // 태그 복원
     if (!newPost.postCategory && newPost.postCategoryString) {
@@ -463,22 +465,20 @@ const writePost = async () => {
     newPost.sortOrder = null;
   }
 
-  // 이미지 URL 추출 후, 본문 내 이미지가 하나라도 있으면 images를 덮어씀
-  const currentImages = extractImageUrls(newPost.content);
-  if (currentImages.length > 0) {
-    newPost.images = currentImages.map(url => ({ imageUrl: url }));
-  }
+  // 이미지 URL 추출 후, images에 추가 (없으면 빈 배열)
+  // 중복 URL은 제거하여 서버 중복 저장 방지
+  const currentImages = Array.from(new Set(extractImageUrls(newPost.content)));
+  newPost.images = currentImages.map(url => ({ imageUrl: url }));
 
+  // 게시글 수정
   if (props.postId) {
     if (!confirm("게시글을 수정하시겠습니까?")) return;
 
     try {
-      await apiClient.put(`/post/update/${props.postId}`, newPost);
-      
-      // 본문에 사용된 이미지와 업로드된 이미지 비교하여 미사용 이미지 삭제
+      await apiClient.put(`/post/${props.postId}`, newPost);
+
       const usedImages = extractImageUrls(newPost.content);
       const unusedImages = uploadedImages.value.filter((url) => !usedImages.includes(url));
-
       if (unusedImages.length > 0) {
         try {
           await apiClient.post('/post/cleanup-temp', unusedImages);
@@ -507,10 +507,10 @@ const writePost = async () => {
     }
   } else {
     if (!confirm("새로운 게시글을 작성하시겠습니까?")) return;
-
+    
+    // 게시글 작성
     try {
       const response = await apiClient.post('/post/write', newPost);
-      // 본문에 사용된 이미지와 업로드된 이미지 비교하여 미사용 이미지 삭제
       const usedImages = extractImageUrls(newPost.content);
       const unusedImages = uploadedImages.value.filter((url) => !usedImages.includes(url));
       if (unusedImages.length > 0) {
@@ -542,15 +542,18 @@ const writePost = async () => {
   }
 }
 
-const confirmDeletePost = (postId, postTitle) => {
+const confirmDeletePost = async(postId, postTitle) => {
   selectedPostId.value = postId;
   selectedPostTitle.value = postTitle;
   showDeletePostModal.value = true;
+  await nextTick();
+  deletePasswordInput.value?.focus();
 }
 
 const closeDeleteModal = () => {
   showDeletePostModal.value = false;
   deletePassword.value = '';
+  deleteError.value = '';
 };
 
 // 게시글 삭제하기
@@ -560,36 +563,49 @@ const deletePost = async () => {
     return;
   }
   try {
-    const response = await apiClient.post('/admin/verify-password', {
-    username: authStore.loginId, 
-    password: deletePassword.value 
+    await apiClient.delete(`/post/${selectedPostId.value}`, {
+      data: { password: deletePassword.value }
     });
-    if (response.data.success) {
 
-        await apiClient.delete(`/post/delete/${selectedPostId.value}`, {
-          params: { 
-            deleterId: authStore.loginId,
-            postTitle: selectedPostTitle.value
+    showDeletePostModal.value = false;
+    deletePassword.value = '';
+
+    router.push({
+      name: 'PostManagement',
+      query: route.query.filteredByBoard === 'true' && route.query.boardId
+        ? {
+            boardId: route.query.boardId,
+            boardName: route.query.boardName,
+            filteredByBoard: 'true',
           }
-        });
-        showDeletePostModal.value = false;
-        deletePassword.value = '';
-        router.push({
-          name: 'PostManagement',
-          query: route.query.filteredByBoard === 'true' && route.query.boardId
-            ? {
-                boardId: route.query.boardId,
-                boardName: route.query.boardName,
-                filteredByBoard: 'true',
-              }
-            : {}
-        });
-    } else {
-        deleteError.value = '비밀번호가 일치하지 않습니다.';
-    }
+        : {}
+    });
+    toast.success('게시글이 삭제되었습니다.');
   } catch (error) {
+    const status = error?.response?.status;
+    const msg = error?.response?.data?.message;
+
+    if (status === 400) {
+      if (msg && msg.includes('비밀번호')) {
+        deletePassword.value = '';
+        await nextTick();
+        deleteError.value = '비밀번호가 일치하지 않습니다.';
+        deletePasswordInput.value?.focus(); 
+      } else {
+        deleteError.value = msg || '요청이 올바르지 않습니다.';
+      }
+      return;
+    }
+
+    if (status === 404) {
+      deleteError.value = '게시글을 찾을 수 없습니다.';
+    } else if ([401, 403].includes(status)) {
+      deleteError.value = '권한이 없거나 인증이 만료되었습니다. 다시 로그인 해주세요.';
+    } else {
+      deleteError.value = '게시글 삭제 중 문제가 발생했습니다. 다시 시도해 주세요.';
+    }
+
     console.error('게시글을 삭제하지 못함: ', error);
-    deleteError.value = '게시글 삭제 중 문제가 발생했습니다. 다시 시도해 주세요.';
   }
 }
 
@@ -614,13 +630,6 @@ onMounted(async () => {
 watch(tagInput, (val) => {
   const keyword = val.replace('#', '').toLowerCase();
   tagSuggestions.value = fuse.value.search(keyword).map(result => result.item);
-});
-
-// 관리자 삭제 모달 비밀번호 에러 메시지 초기화
-watch(showDeletePostModal, (newVal) => {
-  if (!newVal) {
-      deleteError.value = '';
-  }
 });
 
 // 사용자가 비밀번호 입력을 다시 시작하면 에러 메시지 제거

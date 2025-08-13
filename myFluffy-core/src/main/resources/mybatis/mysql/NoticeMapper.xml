@@ -4,16 +4,16 @@
 <mapper namespace="com.renee328.mapper.NoticeMapper">
 
     <resultMap id="noticeResultMap" type="com.renee328.dto.NoticeDto">
-        <id property="noticeId" column="NOTICE_ID"></id>
-        <result property="title" column="TITLE"></result>
-        <result property="content" column="CONTENT"></result>
-        <result property="isActive" column="IS_ACTIVE" javaType="boolean"></result>
-        <result property="createdBy" column="CREATED_BY"></result>
-        <result property="createdByName" column="CREATED_BY_NAME"></result>
-        <result property="createdAt" column="CREATED_AT"></result>
-        <result property="updatedBy" column="UPDATED_BY"></result>
-        <result property="updatedByName" column="UPDATED_BY_NAME"></result>
-        <result property="updatedAt" column="UPDATED_AT"></result>
+        <id property="noticeId" column="NOTICE_ID"/>
+        <result property="title" column="TITLE"/>
+        <result property="content" column="CONTENT"/>
+        <result property="isActive" column="IS_ACTIVE" javaType="boolean"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="createdByName" column="CREATED_BY_NAME"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <result property="updatedByName" column="UPDATED_BY_NAME"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
     </resultMap>
 
     <!-- 공통 검색 조건 -->

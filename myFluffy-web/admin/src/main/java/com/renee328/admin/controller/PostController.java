@@ -1,12 +1,16 @@
 package com.renee328.admin.controller;
 
+import com.renee328.dto.LoginRequest;
 import com.renee328.dto.PostDto;
 import com.renee328.dto.PostSearchCondition;
 import com.renee328.service.FileService;
 import com.renee328.service.PostService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -68,7 +72,7 @@ public class PostController {
     @PostMapping("/upload-image")
     public ResponseEntity<?> uploadImage(@RequestParam("upload") MultipartFile file) {
         String imageUrl = fileService.saveImage(file);
-        return ResponseEntity.ok(Map.of("default", imageUrl));
+        return ResponseEntity.ok(Map.of("imageUrl", imageUrl));
     }
 
     // 게시글 작성하기
@@ -81,7 +85,7 @@ public class PostController {
         ));
     }
 
-    // 에디터에 업로드했던 임시 이미지 파일 지우기
+    // 에디터에 업로드했던 임시 이미지 지우기
     @PostMapping("/cleanup-temp")
     public ResponseEntity<?> cleanupTempImages(@RequestBody List<String> unusedImages) {
         fileService.cleanupTempImages(unusedImages);
@@ -89,16 +93,25 @@ public class PostController {
     }
 
     // 게시글 수정하기
-    @PutMapping("/update/{postId}")
+    @PutMapping("/{postId}")
     public ResponseEntity<?> updatePost(@RequestBody PostDto postDto) {
         postService.updatePost(postDto);
         return ResponseEntity.ok(Map.of("message", "게시글이 업데이트되었습니다."));
     }
 
     // 게시글 삭제하기
-    @DeleteMapping("/delete/{postId}")
-    public ResponseEntity<?> deletePost(@PathVariable Long postId, @RequestParam String deleterId, @RequestParam String postTitle) {
-        postService.deletePost(postId, deleterId, postTitle);
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<?> deletePost(@PathVariable Long postId,
+                                        @RequestBody LoginRequest passwordRequest,
+                                        Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        if (passwordRequest == null || passwordRequest.getPassword() == null || passwordRequest.getPassword().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비밀번호를 입력하세요.");
+        }
+        String deleterLoginId = authentication.getName();
+        postService.deletePost(postId, deleterLoginId, passwordRequest.getPassword());
         return ResponseEntity.ok(Map.of("message", "게시글이 삭제되었습니다."));
     }
 

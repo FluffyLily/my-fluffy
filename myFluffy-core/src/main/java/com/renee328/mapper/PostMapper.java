@@ -10,7 +10,7 @@ import java.util.Map;
 @Mapper
 public interface PostMapper {
 
-    // 게시글 목록 조회하기(필터, 검색 조건 적용)
+    // 게시글 목록 조회(필터, 검색 조건 적용)
     List<PostDto> getPostList(PostSearchCondition searchCondition);
 
     // 게시글 수 조회
@@ -22,19 +22,22 @@ public interface PostMapper {
     // 최근 7일 간의 게시글 수 조회
     List<Map<String, Object>> getPostCountLast7Days();
 
+    // 게시판에 속한 게시글 수 조회
+    int countPostsByBoardId(Long boardId);
+
     // 게시글 작성하기
     void insertPost(PostDto postDto);
 
     // 게시글 세부내용 조회
     PostDto getPostDetails(Long postId);
 
-    // 게시글 수정하기
+    // 게시글 수정
     void updatePost(PostDto postDto);
 
-    // 게시글 삭제 전 임시 저장된 이미지 정리
-    String getPostContentById(Long postId);
+    // 게시글 제목만 조회
+    String getPostTitleById(Long postId);
 
-    // 게시글 삭제하기
+    // 게시글 삭제
     void deletePost(Long postId);
 
     // 게시글 삭제 로그

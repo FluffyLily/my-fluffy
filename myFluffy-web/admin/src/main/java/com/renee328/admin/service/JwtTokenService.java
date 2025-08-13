@@ -5,17 +5,15 @@ import com.renee328.admin.repository.TokenRepository;
 import com.renee328.admin.security.UserDetailsServiceImpl;
 import com.renee328.admin.security.CustomUserDetails;
 import com.renee328.util.JwtManager;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.Collections;
-import java.util.List;
 
 @Service
 public class JwtTokenService {
@@ -36,8 +34,8 @@ public class JwtTokenService {
     }
 
     // Access Token 생성
-    public String generateAccessToken(String loginId, String role, Long userId) {
-        return jwtManager.createToken(loginId, ACCESS_TOKEN_EXPIRATION_TIME, role, userId, null);
+    public String generateAccessToken(String loginId, String roleId, Long userId) {
+        return jwtManager.createToken(loginId, ACCESS_TOKEN_EXPIRATION_TIME, roleId, userId, null);
     }
 
     // Refresh Token 생성
@@ -92,32 +90,18 @@ public class JwtTokenService {
         return null;
     }
 
-    // JWT 검증
-    public String extractLoginId(String token) {
-        return jwtManager.getClaims(token).getSubject();
+    public Claims parseClaimsOrNull(String token) {
+        try {
+            return jwtManager.getClaims(token);
+        } catch (ExpiredJwtException e) {
+            return null;
+        } catch (JwtException | IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public boolean validateToken(String token) {
         return jwtManager.validateToken(token);
-    }
-
-    public List<GrantedAuthority> extractAuthorities(String token) {
-        String role = extractRoleFromToken(token);
-        return Collections.singletonList(new SimpleGrantedAuthority(role));
-    }
-    public String extractRoleFromToken(String token) {
-        try {
-
-            String role = jwtManager.getClaims(token).get("role", String.class);
-
-            if (role == null) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "권한 정보가 포함되지 않은 토큰");
-            }
-
-            return role;
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "권한 정보 추출 중 오류 발생");
-        }
     }
 
 }

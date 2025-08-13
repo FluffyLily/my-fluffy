@@ -25,7 +25,7 @@ public interface BoardService {
     void updateBoard(BoardDto boardDto);
 
     // 게시판 삭제하기
-    void deleteBoard(Long boardId, String deleterId, String boardName);
+    void deleteBoard(Long boardId, String deleterLoginId, String rawPassword);
 
     // -------------------------- 게시판 카테고리 --------------------------
 
@@ -36,7 +36,7 @@ public interface BoardService {
     List<BbsCategoryDto> getCategoriesByBoardId(Long boardId);
 
     // 게시판 카테고리 추가
-   void createBoardCategory(BbsCategoryDto bbsCategoryDto);
+    void createBoardCategory(BbsCategoryDto bbsCategoryDto);
 
     // 게시판 카테고리 수정
     void updateBoardCategory(BbsCategoryDto bbsCategoryDto);

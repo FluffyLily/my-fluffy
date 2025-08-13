@@ -28,7 +28,7 @@ public interface PostService {
     void updatePost(PostDto postDto);
 
     // 게시물 삭제하기
-    void deletePost(Long postId, String deleterId, String postTitle);
+    void deletePost(Long postId, String deleterLoginId, String rawPassword);
 
     // 게시글 카테고리(태그) 조회하기
     List<String> getAllTags();

@@ -101,6 +101,6 @@
 
     <insert id="logAdminDeletion" parameterType="map">
         INSERT INTO admin_action_logs (ADMIN_ID, ACTION, TARGET, TIMESTAMP)
-        VALUES (#{deleterId}, '관리자 계정 삭제', #{deletedId}, NOW())
+        VALUES (#{deleterLoginId}, '관리자 계정 삭제', #{deletedLoginId}, NOW())
     </insert>
 </mapper>

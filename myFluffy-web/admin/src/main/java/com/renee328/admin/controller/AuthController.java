@@ -27,7 +27,7 @@ public class AuthController {
     private final AuthService authService;
     private final TokenRepository tokenRepository;
 
-    private AuthController(AuthService authService, TokenRepository tokenRepository) {
+    public AuthController(AuthService authService, TokenRepository tokenRepository) {
         this.authService = authService;
         this.tokenRepository = tokenRepository;
     }
