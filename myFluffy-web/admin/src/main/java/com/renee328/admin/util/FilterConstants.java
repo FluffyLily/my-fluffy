@@ -33,7 +33,7 @@ public class FilterConstants {
     // User-Agent 필수 여부
     public static final boolean REQUIRE_USER_AGENT = true;
 
-    // 의심스러운 JS 요청 패턴 (필요 없으면 null 가능)
+    // 의심스러운 JS 요청 패턴
     public static final Pattern SUSPICIOUS_JS_REGEX =
             Pattern.compile("^/(jquery|bootstrap|config|env|main).*\\.js$", Pattern.CASE_INSENSITIVE);
 

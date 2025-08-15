@@ -2,7 +2,7 @@
   <div class="header">
     <div class="logo">관리자 시스템</div>
     <div class="user-info" v-if="authStore.userId">
-      <button class="btn btn-user" @click="showProfileModal = true">{{ authStore.loginId }}</button>
+      <button class="btn btn-user" @click="openUpdateProfileModal">{{ authStore.loginId }}</button>
       <button class="btn btn-logout" @click="logout">로그아웃</button>
     </div>
   </div>
@@ -19,11 +19,11 @@
           <input :value="profileForm.loginId" class="form-control mb-2" readonly />
 
           <label class="form-label d-block text-start">현재 비밀번호</label>
-          <input v-model="profileForm.currentPassword" type="password" class="form-control mb-2"/>
+          <input v-model="profileForm.currentPassword" type="password" ref="currentPasswordInput" class="form-control mb-2"/>
           <small v-if="currentPasswordError" class="text-danger">{{ currentPasswordError }}</small>
 
           <label class="form-label d-block text-start">새 비밀번호</label>
-          <input v-model="profileForm.loginPassword" type="password" class="form-control mb-2"/>
+          <input v-model="profileForm.loginPassword" type="password" ref="newPasswordInput" class="form-control mb-2"/>
           <small v-if="passwordError" class="text-danger">{{ passwordError }}</small>
 
           <label class="form-label d-block text-start">비밀번호 확인</label>
@@ -50,15 +50,16 @@ import { useToast } from 'vue-toastification';
 const router = useRouter();
 const authStore = useAuthStore();
 const toast = useToast();
-const showProfileModal = ref(false);
 
+const showProfileModal = ref(false);
 const profileForm = ref({
   loginId: authStore.loginId,
   currentPassword: '',
   loginPassword: '',
   updatedBy: authStore.userId
 });
-
+const currentPasswordInput = ref(null);
+const newPasswordInput = ref(null);
 const confirmNewPassword = ref('');
 const passwordError = ref('');
 const currentPasswordError = ref('');
@@ -75,6 +76,12 @@ const isFormValid = computed(() => {
     confirmNewPassword.value.trim() !== ''
   );
 });
+
+const openUpdateProfileModal = async () => {
+  showProfileModal.value = true;
+  await nextTick();
+  currentPasswordInput.value?.focus();
+}
 
 // 프로필 업데이트 (비밀번호 변경)
 const updateProfile = async () => {
@@ -100,8 +107,10 @@ const updateProfile = async () => {
         profileForm.value.currentPassword = '';
         await nextTick();
         currentPasswordError.value = '현재 비밀번호가 일치하지 않습니다.';
+        currentPasswordInput.value?.focus();
       } else {
         passwordError.value = msg || '요청이 올바르지 않습니다.';
+        newPasswordInput.value?.focus();
       }
       return;
     }

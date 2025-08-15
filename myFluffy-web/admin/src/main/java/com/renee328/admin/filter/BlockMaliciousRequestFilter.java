@@ -35,14 +35,14 @@ public class BlockMaliciousRequestFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 의심 JS 이름 패턴
+        // 의심스러운 JS 요청 차단
         if (SUSPICIOUS_JS_REGEX != null && SUSPICIOUS_JS_REGEX.matcher(uri).matches()) {
             log.warn("[의심 JS 요청] ip={}, uri={}", ip, path);
             response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 의심스러운 정적 리소스 요청.");
             return;
         }
 
-        // 의심스러운 파일 확장자
+        // 의심스러운 파일 확장자 요청 차단
         if (BLOCKED_EXTENSIONS.stream().anyMatch(uri::endsWith)) {
             log.warn("[의심스러운 확장자 요청] ip={}, uri={}", ip, path);
             response.sendError(HttpStatus.FORBIDDEN.value(), "Forbidden: 의심스러운 파일 요청.");

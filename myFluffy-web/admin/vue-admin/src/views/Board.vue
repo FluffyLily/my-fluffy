@@ -5,7 +5,7 @@
         <!-- 게시판 카테고리 필터 영역 -->
         <div class="category-filter-container">
           <h2>게시판 카테고리</h2>
-          <button class="btn mb-2" @click="showCreateCategoryModal = true">
+          <button class="btn mb-2" @click="openCreateCategoryModal">
             <font-awesome-icon :icon="['fas', 'plus']" />
           </button>
           <div class="category-list">
@@ -90,16 +90,16 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title category-title">게시판 카테고리 등록</h5>
-                <button type="button" class="btn-close" @click="closeCategoryModal"></button>
+                <button type="button" class="btn-close" @click="closeCreateCategoryModal"></button>
               </div>
               <div class="modal-body">
                 <label class="form-label">카테고리 이름</label>
-                <input v-model="newCategory.boardCategoryName" placeholder="새로운 카테고리 입력" class="form-control mb-2"/>
+                <input v-model="newCategory.boardCategoryName" ref="newBoardCategoryInput" placeholder="새로운 카테고리 입력" class="form-control mb-2"/>
                 <small v-if="categoryNameError" class="text-danger">{{ categoryNameError }}</small>
               </div>
               <div class="modal-footer">
                 <button class="btn btn-primary" @click="createBoardCategory" :disabled="!isCategoryValid">등록하기</button>
-                <button class="btn btn-secondary" @click="closeCategoryModal">닫기</button>
+                <button class="btn btn-secondary" @click="closeCreateCategoryModal">닫기</button>
               </div>
             </div>
           </div>
@@ -114,7 +114,7 @@
               </div>
               <div class="modal-body">
                 <label class="form-label">게시판 이름</label>
-                <input v-model="newBoard.boardName" placeholder="새로운 게시판 입력" class="form-control mb-2" />
+                <input v-model="newBoard.boardName" ref="newBoardNameInput" placeholder="새로운 게시판 입력" class="form-control mb-2" />
                 <label class="form-label">카테고리</label>
                 <select v-model="newBoard.boardCategoryId" class="form-select mb-2">
                   <option disabled value="">카테고리 선택</option>
@@ -253,6 +253,8 @@ const newBoard = ref({
   updatedBy: userId,
   updatedAt: new Date().toISOString()
 });
+const newBoardCategoryInput = ref(null);
+const newBoardNameInput = ref(null);
 const showCreateCategoryModal = ref(false);
 const showCreateBoardModal = ref(false);
 const categoryNameError = ref(null);
@@ -324,13 +326,19 @@ const resetCreateForm = () => {
   boardNameError.value = null;
 };
 
-const closeCategoryModal = () => {
+const openCreateCategoryModal = async() => {
+  showCreateCategoryModal.value = true;
+  await nextTick();
+  newBoardCategoryInput.value?.focus();
+}
+const closeCreateCategoryModal = () => {
   showCreateCategoryModal.value = false;
   resetCreateForm();
 };
-const openCreateBoardModal = () => {
+const openCreateBoardModal = async() => {
   showCreateBoardModal.value = true;
-  resetCreateForm();
+  await nextTick();
+  newBoardNameInput.value?.focus();
 };
 const closeCreateBoardModal = () => {
   showCreateBoardModal.value = false;

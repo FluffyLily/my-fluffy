@@ -5,7 +5,7 @@
       <form @submit.prevent="handleLogin">
         <div class="mb-3">
           <label for="username" class="form-label">관리자 아이디</label>
-          <input v-model="username" type="text" id="username" class="form-control" placeholder="아이디 입력" />
+          <input v-model="username" type="text" id="username" ref="usernameInput" class="form-control" placeholder="아이디 입력" />
         </div>
         <div class="mb-3">
           <label for="password" class="form-label">비밀번호</label>
@@ -30,6 +30,7 @@ import { jwtDecode } from 'jwt-decode';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const usernameInput = ref(null);
 const username = ref('');
 const password = ref('');
 const errorMessage = ref('');
@@ -85,6 +86,10 @@ const login = async () => {
     isLoading.value = false;
   }
 };
+onMounted(() => {
+  usernameInput.value?.focus();
+});
+
 </script>
 
 <style lang="scss" scoped>

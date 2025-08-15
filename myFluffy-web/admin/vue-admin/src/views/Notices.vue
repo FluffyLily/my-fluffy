@@ -36,7 +36,7 @@
             <div class="modal-body">
               <div class="modal-field">
                 <label for="noticeTitle">제목</label>
-                <input v-model="newNotice.title" type="text" id="noticeTitle" placeholder="제목을 입력하세요" />
+                <input v-model="newNotice.title" type="text" id="noticeTitle" ref="newNoticeTitleInput" placeholder="제목을 입력하세요" />
               </div>
               <div class="modal-field">
                 <label for="noticeContent">내용</label>
@@ -129,7 +129,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted, computed, nextTick } from 'vue';
 import apiClient from '../api/axios.js';
 import { useAuthStore } from '../stores/auth.js';
 import { format } from 'date-fns';
@@ -138,7 +138,7 @@ const authStore = useAuthStore();
 
 const notices = ref([]);
 const totalCount = ref(0);
-
+const newNoticeTitleInput = ref(null);
 const searchCondition = reactive({
   sort: 'recent',
   offset: 0,
@@ -224,12 +224,14 @@ const formatDate = (date) => {
   return format(new Date(date), 'yyyy-MM-dd HH:mm');
 };
 
-const openCreateNotice = () => {
+const openCreateNotice = async() => {
   newNotice.noticeId = null;
   newNotice.title = '';
   newNotice.content = '';
   newNotice.isActive = true;
   showCreateNoticeModal.value = true;
+  await nextTick();
+  newNoticeTitleInput.value?.focus();
 };
 
 const closeCreateNoticeModal = () => {
