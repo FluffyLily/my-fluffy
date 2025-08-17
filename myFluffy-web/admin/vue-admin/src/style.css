@@ -1,5 +1,6 @@
 :root {
   --primary-color: #FFB6D4; /* 핑크 */
+  --point-pink: #FF80A1; /* 포인트 핑크 */
   --secondary-color: #d36084; /* 진한 핑크 */
   --selected-color: #fba5c0; /* 중간 핑크 */
   --background-color: #FFF7F7; /* 부드러운 핑크빛 화이트 */
@@ -32,18 +33,21 @@
 
   --highlight-yellow: #f8d799;
   --highlight-border-yellow: #f8cb76;
+  --highlight-hotpink: #FF66A1;
   --highlight-purple: #e9a0d9;
   --highlight-mint: #a0e9d1;
 
   /* 추가 컬러 팔레트 */
   --lavender-soft: #c6b4d8;
   --purple-moon: #d280c0;
+  --mystic-skyblue: #E6F7FF;
   --sky-mist: #b5d3d5;
   --almond-cream: #f0eae0;
   --peach-sherbet: #f5c0bf;
   --rose-dust: #ead4d4;
   --black-pearl: #503e4b;
   --coral-red: #e36255;
+  --dangerous-crimson: #D9534F;
   --salmon-sunset: #ec9a86;
   --mint-gray: #a2c5c9;
   --golden-sand: #f3c262;
@@ -99,11 +103,6 @@ button {
   cursor: pointer;
   transition: background-color 0.3s, border-color 0.25s;
 }
-
-/* button:hover {
-  background-color: var(--button-hover-warning);
-  border-color: var(--primary-color);
-} */
 
 .card {
   background: var(--card-bg);

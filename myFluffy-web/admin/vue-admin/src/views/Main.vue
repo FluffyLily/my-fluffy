@@ -38,7 +38,8 @@
         <h3><span class="emoji-text">📌</span> 최근 게시글</h3>
         <ul>
           <li v-for="(post, index) in recentPosts" :key="index">
-            <span class="emoji-text">📝</span> {{ post.title }} - {{ post.author }} | {{ formatDate(post.createdAt) }}
+            <span class="title"><span class="emoji-text">📝</span> {{ post.title }} </span>
+            <span class="date">{{ formatDate(post.createdAt) }}</span>
           </li>
         </ul>
       </div>
@@ -47,7 +48,8 @@
         <h3><span class="emoji-text">🆕</span> 최근 가입 회원</h3>
         <ul v-if="recentUsers.length > 0">
           <li v-for="(user, index) in recentUsers" :key="index">
-            <span class="emoji-text">👤</span> {{ user.loginId }} - {{ formatDate(user.createdAt) }}
+            <span class="title"><span class="emoji-text">👤</span> {{ user.loginId }}</span>
+            <span class="date">{{ formatDate(user.createdAt) }}</span>
           </li>
         </ul>
         <p v-else class="empty-message">아직 가입한 회원이 없습니다.</p>
@@ -224,174 +226,188 @@ onMounted(() => {
   position: relative;
   z-index: 0;
   overflow-x: auto;
-}
 
-.notice-card,
-.summary-cards,
-.card-section,
-.chart-card,
-.quick-action-card {
-  position: relative;
-  z-index: 0;
-  min-width: 1200px;
-}
+  .notice-card,
+  .summary-cards,
+  .card-section,
+  .chart-card,
+  .quick-action-card {
+    position: relative;
+    z-index: 0;
+    min-width: 1200px;
+  }
 
-.main-title {
-  font-size: 2rem;
-  font-weight: bold;
-  color: var(--secondary-color);
-}
+  .main-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--secondary-color);
+  }
 
-.main-subtitle {
-  margin-bottom: 2rem;
-  color: var(--text-color);
-}
+  .main-subtitle {
+    margin-bottom: 2rem;
+    color: var(--text-color);
+  }
 
-.notice-card {
-  background-color: var(--avocado-frost);
-  border-left: 5px solid var(--salmon-sunset);
-  padding: 1rem;
-  margin-bottom: 2rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  .notice-card {
+    background-color: var(--avocado-frost);
+    border-left: 5px solid var(--salmon-sunset);
+    padding: 1rem;
+    margin-bottom: 2rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
 
-  &:hover {
-    background-color: var(--peach-sherbet);
+    &:hover {
+      background-color: var(--peach-sherbet);
+    }
+  }
+
+  .summary-cards {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    flex: 1;
+    text-align: center;
+    padding: 1.5rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+
+    &.pink-border {
+      border-color: var(--card-border-pink);
+    }
+
+    &.mint-border {
+      border-color: var(--card-border-mint);
+    }
+
+    &.yellow-border {
+      border-color: var(--highlight-border-yellow);
+    }
+
+    &.violet-border {
+      border-color: var(--card-border-purple);
+    }
+  }
+
+  .card-section {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+
+    .activity-card {
+      flex: 1;
+
+      p.empty-message {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 120px;
+        margin: 0;
+        text-align: center;
+        font-style: italic;
+        color: var(--text-color);
+      }
+
+      ul {
+        padding-left: 1rem;
+        padding-right: 1rem;
+        margin-top: 0.5rem;
+
+        li {
+          position: relative;
+          list-style: none;
+          padding-left: 1.2rem;
+          padding-right: 1.2rem;
+          padding-bottom: 2px;
+          border-bottom: 2px dotted var(--rose-dust);
+          margin-bottom: 6px;
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+
+          .title {
+            text-align: left;
+          }
+
+          .date {
+            text-align: right;
+            flex-shrink: 0;
+            margin-left: auto;
+          }
+
+          .dot {
+            position: absolute;
+            left: 0;
+            top: 0.6em;
+            width: 8px;
+            height: 8px;
+            background-color: var(--button-add-color);
+            border-radius: 50%;
+          }
+        }
+      }
+    }
+  }
+
+  .chart-card {
+    margin-bottom: 2rem;
+  }
+
+  .quick-action-card {
+    margin-bottom: 2rem;
+
+    .quick-buttons {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+
+      .btn-add {
+        background-color: var(--avocado-frost);
+
+        &:hover {
+          background-color: var(--melon-icecream);
+        }
+      }
+
+      .btn-post {
+        background-color: var(--seafoam-teal);
+
+        &:hover {
+          background-color: var(--mint-gray);
+        }
+      }
+
+      .btn-admin {
+        background-color: var(--violet-deep);
+
+        &:hover {
+          background-color: var(--lavender-soft);
+        }
+      }
+
+      .btn-search {
+        background-color: var(--salmon-sunset);
+
+        &:hover {
+          background-color: var(--peach-sherbet);
+        }
+      }
+    }
+  }
+
+  .emoji-text {
+    font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+  }
+
+  .btn-notice {
+    background-color: var(--sun-honey);
+
+    &:hover {
+      background-color: var(--highlight-yellow);
+    }
   }
 }
-
-.summary-cards {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.stat-card {
-  flex: 1;
-  text-align: center;
-  padding: 1.5rem;
-  font-size: 1.1rem;
-  font-weight: bold;
-}
-
-.pink-border {
-  border-color: var(--card-border-pink);
-}
-
-.mint-border {
-  border-color: var(--card-border-mint);
-}
-
-.yellow-border {
-  border-color: var(--highlight-border-yellow);
-}
-
-.violet-border {
-  border-color: var(--card-border-purple);
-}
-
-.card-section {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.activity-card {
-  flex: 1;
-}
-
-.activity-card p.empty-message {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 120px;
-  margin: 0;
-  text-align: center;
-  font-style: italic;
-  color: var(--text-color);
-}
-
-.activity-card ul {
-  padding-left: 1rem;
-  margin-top: 0.5rem;
-}
-
-.activity-card ul li {
-  position: relative;
-  padding-left: 1.2rem;
-  list-style: none;
-  padding-bottom: 2px;
-  border-bottom: 2px dotted var(--accent-color);
-  margin-bottom: 6px;
-}
-
-.activity-card ul li .dot {
-  position: absolute;
-  left: 0;
-  top: 0.6em;
-  width: 8px;
-  height: 8px;
-  background-color: var(--button-add-color);
-  border-radius: 50%;
-}
-
-.chart-card {
-  margin-bottom: 2rem;
-}
-
-.quick-action-card {
-  margin-bottom: 2rem;
-}
-
-.emoji-text {
-  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
-}
-
-.quick-buttons {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-}
-
-.btn-add {
-  background-color: var(--avocado-frost);
-}
-
-.btn-add:hover {
-  background-color: var(--melon-icecream);
-}
-
-.btn-post {
-  background-color: var(--seafoam-teal);
-}
-
-.btn-post:hover {
-  background-color: var(--mint-gray);
-}
-
-.btn-admin {
-  background-color: var(--violet-deep);
-}
-
-.btn-admin:hover {
-  background-color: var(--lavender-soft);
-}
-
-.btn-search {
-  background-color: var(--salmon-sunset);
-}
-
-.btn-search:hover {
-  background-color: var(--peach-sherbet);
-}
-
-.btn-notice {
-  background-color: var(--sun-honey);
-}
-
-.btn-notice:hover {
-  background-color: var(--highlight-yellow);
-}
-
 </style>

@@ -100,45 +100,45 @@ onMounted(() => {
   justify-content: center;
   height: 100vh;
   width: 100vw;
-  background: linear-gradient(135deg, #FFF7F7, #E6F7FF);
+  background: linear-gradient(135deg, var(--background-color), var(--mystic-skyblue));
 }
 
 .login-card {
   width: 100%;
   max-width: 400px;
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 15px;
   box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
   padding: 30px;
   text-align: center;
-  border: 3px solid #FFB6D4;
-}
+  border: 3px solid var(--card-border-pink);
 
-h2 {
-  color: #FF80A1;
-  font-weight: bold;
-  margin-bottom: 20px;
-}
+  h2 {
+    color: var(--point-pink);
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
 
-.form-control {
-  border: 2px solid #FFB6D4;
-  border-radius: 8px;
-  padding: 10px;
-  font-size: 1rem;
-  transition: 0.3s;
-}
+  .form-control {
+    border: 2px solid var(--card-border-pink);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 1rem;
+    transition: 0.3s;
 
-.form-control:focus {
-  border-color: #FF80A1;
-  box-shadow: 0px 0px 8px rgba(255, 128, 161, 0.5);
-  outline: none;
+    &:focus {
+      border-color: var(--point-pink);
+      box-shadow: 0px 0px 8px rgba(255, 128, 161, 0.5);
+      outline: none;
+    }
+  }
 }
 
 .spinner-border-custom {
   width: 20px;
   height: 20px;
   border: 4px solid transparent;
-  border-top-color: #FF80A1;
+  border-top-color: var(--point-pink);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-right: 10px;
@@ -150,7 +150,7 @@ h2 {
 }
 
 .btn-primary {
-  background-color: #FF80A1;
+  background-color: var(--point-pink);
   border: none;
   padding: 12px;
   font-size: 1rem;
@@ -160,16 +160,16 @@ h2 {
   display: flex;
   justify-content: center;
   align-items: center;
-}
 
-.btn-primary:hover {
-  background-color: #FF66A1;
+  &:hover {
+    background-color: var(--highlight-hotpink);
+  }
 }
 
 .text-danger {
   font-size: 0.9rem;
   font-weight: bold;
-  color: #D9534F;
+  color: var(--dangerous-crimson);
   margin-top: 10px;
 }
 </style>

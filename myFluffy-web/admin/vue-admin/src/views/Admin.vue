@@ -465,23 +465,26 @@ watch(deletePassword, () => {
   flex-direction: column;
   height: 100vh;
   background-color: #f8f9fa;
+
+  .page-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    background-color: white;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+
+    .page-content {
+      flex: 1;
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+  }
 }
-.page-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  background-color: white;
-  overflow-y: auto;
-  scroll-behavior: smooth;
-}
-.page-content {
-  flex: 1;
-  background-color: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
+
 .main-title {
   font-size: 2rem;
   font-weight: bold;
@@ -524,7 +527,8 @@ watch(deletePassword, () => {
   border-collapse: separate;
   border-spacing: 0 8px;
 
-  th, td {
+  th,
+  td {
     font-size: 14px;
     text-align: center;
     padding: 12px 14px;
@@ -547,8 +551,15 @@ watch(deletePassword, () => {
     .emoji-text {
       font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
     }
-    
+    .admin-action-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+    }
   }
+
   .role-tag {
     display: inline-block;
     padding: 2px 8px;
@@ -558,26 +569,32 @@ watch(deletePassword, () => {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 120px;
-    &--yellow { background-color: var(--highlight-yellow); color: black; }
-    &--purple { background-color: var(--highlight-purple); color: white; }
-    &--mint   { background-color: var(--highlight-mint); color: black; }
-  }
-
-  .role-tag--yellow { background-color: var(--highlight-yellow); color: black; }
-  .role-tag--purple { background-color: var(--highlight-purple); color: white; }
-  .role-tag--mint   { background-color: var(--highlight-mint); color: black; }
-
-  // 관리자 목록 - 수정, 삭제 버튼
-  td {
-    & .admin-action-buttons {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      flex-wrap: nowrap;
+    &--yellow {
+      background-color: var(--highlight-yellow);
+      color: black;
+    }
+    &--purple {
+      background-color: var(--highlight-purple);
+      color: white;
+    }
+    &--mint {
+      background-color: var(--highlight-mint);
+      color: black;
     }
   }
-  // 관리자 목록 - 수정, 삭제 버튼 스타일
+  .role-tag--yellow {
+    background-color: var(--highlight-yellow);
+    color: black;
+  }
+  .role-tag--purple {
+    background-color: var(--highlight-purple);
+    color: white;
+  }
+  .role-tag--mint {
+    background-color: var(--highlight-mint);
+    color: black;
+  }
+
   button {
     padding: 4px 12px;
     font-size: 0.875rem;
@@ -598,7 +615,6 @@ watch(deletePassword, () => {
         border-color: var(--button-hover-warning);
       }
     }
-
     &.btn-danger {
       background-color: var(--button-danger-color);
       border-color: var(--button-danger-color);
@@ -637,19 +653,7 @@ watch(deletePassword, () => {
   }
 }
 
-// 모달 오버레이
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
+// 모달 내용
 .modal-content {
   background-color: white;
   padding: 20px;
@@ -702,7 +706,5 @@ watch(deletePassword, () => {
     }
   }
 }
-
-
 </style>
 

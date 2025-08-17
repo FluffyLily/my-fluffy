@@ -179,58 +179,45 @@ watch(() => profileForm.value.currentPassword, (newPassword) => {
   z-index: 1000;
   height: 70px;
   box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
-}
 
-.logo {
-  font-size: 1.6rem;
-  font-weight: bold;
-}
+  .logo {
+    font-size: 1.6rem;
+    font-weight: bold;
+  }
 
-.user-info {
-  display: flex;
-  align-items: center;
-}
+  .user-info {
+    display: flex;
+    align-items: center;
 
-.btn-user {
-  padding: 8px 15px;
-  background-color: var(--button-warning-color);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  margin-right: 10px;
-  transition: background-color 0.3s;
-  cursor: pointer;
-}
+    .btn-user {
+      padding: 8px 15px;
+      background-color: var(--button-warning-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      margin-right: 10px;
+      transition: background-color 0.3s;
+      cursor: pointer;
 
-.btn-user:hover {
-  background-color: var(--button-hover-warning);
-}
+      &:hover {
+        background-color: var(--button-hover-warning);
+      }
+    }
 
-.btn-logout {
-  padding: 8px 15px;
-  background-color: var(--button-danger-color);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  transition: background-color 0.3s;
-  cursor: pointer;
-}
+    .btn-logout {
+      padding: 8px 15px;
+      background-color: var(--button-danger-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      transition: background-color 0.3s;
+      cursor: pointer;
 
-.btn-logout:hover {
-  background-color: var(--button-hover-danger);
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+      &:hover {
+        background-color: var(--button-hover-danger);
+      }
+    }
+  }
 }
 
 .modal-content {

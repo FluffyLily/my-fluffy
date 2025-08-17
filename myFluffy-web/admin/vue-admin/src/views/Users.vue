@@ -169,24 +169,24 @@ onMounted(fetchUsers);
   flex-direction: column;
   height: 100vh;
   background-color: #f8f9fa;
-}
 
-.page-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  background-color: white;
-  overflow-y: auto;
-  scroll-behavior: smooth;
-}
+  .page-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    background-color: white;
+    overflow-y: auto;
+    scroll-behavior: smooth;
 
-.page-content {
-  flex: 1;
-  background-color: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    .page-content {
+      flex: 1;
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+  }
 }
 
 .main-title {
@@ -203,7 +203,6 @@ onMounted(fetchUsers);
   gap: 12px;
   margin-bottom: 20px;
   
-
   .filter-item {
     display: flex;
     align-items: center;
@@ -311,11 +310,12 @@ onMounted(fetchUsers);
   border-radius: 12px;
   padding: 2px 8px;
   font-size: 14px;
+
+  &--normal { background-color: var(--avocado-frost); color: black; }
+  &--google { background-color: var(--melon-icecream); color: black; }
+  &--kakao { background-color: #f9e000; color: black; }
+  &--suspended { background-color: #ccc; color: #555; }
 }
-.user-tag--normal { background-color: var(--avocado-frost); color: black; }
-.user-tag--google { background-color: var(--melon-icecream); color: black; }
-.user-tag--kakao { background-color: #f9e000; color: black; }
-.user-tag--suspended { background-color: #ccc; color: #555; }
 
 .pagination {
   display: flex;
@@ -323,26 +323,26 @@ onMounted(fetchUsers);
   align-items: center;
   margin-top: 20px;
   gap: 10px;
-}
 
-.pagination button {
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: none;
-  background-color: var(--avocado-frost);
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-}
+  button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    background-color: var(--avocado-frost);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
 
-.pagination button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
+    &:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
 
-.pagination button.active {
-  background-color: var(--seafoam-teal);
-  color: black;
-  font-weight: bold;
+    &.active {
+      background-color: var(--seafoam-teal);
+      color: black;
+      font-weight: bold;
+    }
+  }
 }
 </style>

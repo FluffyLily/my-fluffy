@@ -86,28 +86,33 @@ const reloadIfSameRoute = (path) => {
     margin: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     gap: 10px;
   }
 
   li {
     margin-bottom: 10px;
+    width: 100%;
 
     a {
       text-decoration: none;
       color: white;
-      font-size: 1.1rem;
+      font-size: 1.25rem;
       font-weight: 600;
       padding: 10px 15px;
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       border-radius: 8px;
       transition: background-color 0.3s;
+      width: 100%;
+      text-align: left;
+      gap: 8px;
 
       .menu-icon {
-        margin-right: 8px;
         font-size: 1rem;
+        width: 20px;
+        text-align: center;
       }
 
       &:hover {
