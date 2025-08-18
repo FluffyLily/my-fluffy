@@ -36,7 +36,7 @@ const isLoggedIn = computed(() => !!authStore.userId);
   flex-grow: 1;
   margin-left: 250px;
   transition: margin-left 0.3s;
-  padding-top: 70px; /* Header 높이만큼 여백 추가 */
+  padding-top: 70px;
 }
 
 .content-area {

@@ -7,9 +7,11 @@ public class FilterConstants {
 
     // 차단 대상 URI 패턴
     public static final List<String> BLOCKED_URI_PATTERNS = List.of(
-            "/.git", ".env", "/php", "/HNAP1", "/shell", "/wp-", "/actuator", "/cgi-bin",
-            "/p/u", "/doAuthentication", "/.well-known", "/boaform", "/setup.cgi",
-            "/admin/config", "/debug", "/config", "/passwd" );
+            "/.git", ".env", "/php", "/HNAP1", "/shell",
+            "/wp-", "/actuator", "/cgi-bin", "/p/u", "/doAuthentication",
+            "/.well-known", "/boaform", "/setup.cgi", "/admin/config",
+            "/debug", "/config", "/passwd", "unix:", "|", "oast.pro"
+    );
 
     // 의심스러운 파일 확장자
     public static final List<String> BLOCKED_EXTENSIONS = List.of(".php", ".env", ".bak");
