@@ -30,9 +30,21 @@ server:
     key-store-type: ${SSL_KEY_STORE_TYPE:PKCS12}
     key-store-password: "${KEYSTORE_PASSWORD:defaultPassword}"
     key-alias: ${SSL_KEY_ALIAS:cms}
+
   error:
     include-stacktrace: never      # trace 숨김
     include-message: always        # message 노출
+
+  tomcat:
+    accesslog:
+      enabled: true
+      directory: /home/ubuntu/deploy/logs
+      prefix: access_log
+      suffix: .log
+      rotate: true
+      file-date-format: .yyyy-MM-dd
+      pattern: '%h %l %u %t "%r" %s %b "%{Referer}i" "%{User-Agent}i"'
+      request-attributes-enabled: true
 
 security:
   jwt:

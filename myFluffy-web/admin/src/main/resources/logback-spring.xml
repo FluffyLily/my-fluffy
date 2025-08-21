@@ -8,28 +8,54 @@
         </encoder>
     </appender>
 
-    <!-- 파일 로그 출력 -->
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- 하루 단위 분할 -->
-            <fileNamePattern>logs/app.%d{yyyy-MM-dd}.log</fileNamePattern>
+    <!-- admin 운영 환경용 설정 -->
+    <springProfile name="admin-prod">
 
-            <!-- 최대 보관일 수 -->
-            <maxHistory>30</maxHistory>
+        <!-- 파일 로그 출력 -->
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <!-- 하루 단위 분할 -->
+                <fileNamePattern>/home/ubuntu/deploy/logs/app.%d{yyyy-MM-dd}.log</fileNamePattern>
+                <!-- 최대 보관일 수 -->
+                <maxHistory>30</maxHistory>
+                <!-- 전체 로그 파일 용량 제한 -->
+                <totalSizeCap>1GB</totalSizeCap>
+            </rollingPolicy>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
 
-            <!-- 전체 로그 파일 용량 제한 -->
-            <totalSizeCap>1GB</totalSizeCap>
-        </rollingPolicy>
+        <!-- 보안 로그 (malicious request 차단 기록) -->
+        <appender name="SECURITY" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>/home/ubuntu/deploy/logs/security.%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>30</maxHistory>
+                <totalSizeCap>500MB</totalSizeCap>
+            </rollingPolicy>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
 
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
+        <!-- 보안 로거 -->
+        <logger name="com.renee328.admin.filter.BlockMaliciousRequestFilter" level="WARN" additivity="false">
+            <appender-ref ref="SECURITY"/>
+            <appender-ref ref="CONSOLE"/>
+        </logger>
 
-    <!-- 루트 로거 설정 (콘솔 + 파일) -->
-    <root level="INFO">
-        <appender-ref ref="CONSOLE" />
-        <appender-ref ref="FILE" />
-    </root>
+        <!-- 루트 로거 설정 (콘솔 + 파일) -->
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+            <appender-ref ref="FILE" />
+        </root>
+    </springProfile>
+
+    <!-- 개발/로컬 기본 -->
+    <springProfile name="default,local,dev">
+        <root level="DEBUG">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
 
 </configuration>
