@@ -73,7 +73,7 @@
             </div>
             <div class="modal-body">
               <label class="form-label d-block text-start">아이디</label>
-              <input v-model="newAdmin.loginId" ref="newLoginIdInput" placeholder="계정 아이디" class="form-control mb-2"/>
+              <input v-model="newAdmin.loginId" ref="modalInputRef" placeholder="계정 아이디" class="form-control mb-2"/>
               <small v-if="loginIdError" 
                 :class="{
                   'text-danger': loginIdError !== '사용 가능한 아이디입니다.', 
@@ -156,7 +156,7 @@
             <div class="modal-body">
               <div class="mb-3">
                 <label class="form-label d-block">관리자 비밀번호 확인:</label>
-                <input type="password" v-model="deletePassword" ref="deletePasswordInput" class="form-control mb-2" />
+                <input type="password" v-model="deletePassword" ref="modalInputRef" class="form-control mb-2" />
                 <div v-if="deleteError" class="text-danger mb-3">{{ deleteError }}</div>
               </div>
             </div>
@@ -189,8 +189,7 @@ const loading = ref(true);
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteModal = ref(false);
-const newLoginIdInput = ref(null);
-const deletePasswordInput = ref(null);
+const modalInputRef = ref(null);
 const deletePassword = ref('');
 const deleteUserId = ref(null);
 const deleteLoginId = ref(null);
@@ -339,7 +338,7 @@ const fetchAdmins = async () => {
 const registerNewAdmin = async () => {
   showCreateModal.value = true;
   await nextTick();
-  newLoginIdInput.value?.focus();
+  modalInputRef.value?.focus();
 }
 
 // 관리자 새로 등록하기
@@ -386,7 +385,7 @@ const openDeleteModal = async (admin) => {
   deleteLoginId.value = admin.loginId;
   showDeleteModal.value = true;
   await nextTick();
-  deletePasswordInput.value?.focus();
+  modalInputRef.value?.focus();
 };
 
 // 관리자 계정 삭제
@@ -409,7 +408,7 @@ const deleteAdmin = async () => {
       deleteError.value = '권한이 없거나 인증이 만료되었습니다. 다시 로그인 해주세요.';
     } else if (error?.response?.status === 400) {
       deleteError.value = error.response?.data?.message || '요청이 올바르지 않습니다.';
-      deletePasswordInput.value?.focus();
+      modalInputRef.value?.focus();
     } else {
       deleteError.value = '삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
     }

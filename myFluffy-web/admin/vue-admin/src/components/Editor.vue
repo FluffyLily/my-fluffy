@@ -542,7 +542,7 @@ const writePost = async () => {
   }
 }
 
-const confirmDeletePost = async(postId, postTitle) => {
+const confirmDeletePost = async (postId, postTitle) => {
   selectedPostId.value = postId;
   selectedPostTitle.value = postTitle;
   showDeletePostModal.value = true;

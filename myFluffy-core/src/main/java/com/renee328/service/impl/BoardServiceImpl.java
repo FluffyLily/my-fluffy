@@ -61,7 +61,12 @@ public class BoardServiceImpl implements BoardService {
     @Override
     public BoardDto getBoardDetails(Long boardId) {
         BoardDto board = boardMapper.getBoardDetails(boardId);
-        board.setCategories(bbsCategoryMapper.selectCategoriesByBoardId(boardId));
+        List<BbsCategoryDto> categories = bbsCategoryMapper.selectCategoriesByBoardId(boardId);
+        board.setCategories(categories);
+        if (categories != null && !categories.isEmpty()) {
+            board.setBoardCategoryId(categories.get(0).getBoardCategoryId());
+            board.setBoardCategoryName(categories.get(0).getBoardCategoryName());
+        }
         return board;
     }
 
@@ -128,6 +133,12 @@ public class BoardServiceImpl implements BoardService {
         return bbsCategoryMapper.selectAllCategories();
     }
 
+    // 카테고리 상세 조회
+    @Override
+    public BbsCategoryDto getCategoryByCategoryId(Long boardCategoryId) {
+        return bbsCategoryMapper.selectCategoryByCategoryId(boardCategoryId);
+    }
+
     // 게시판별 카테고리 목록 조회
     @Override
     public List<BbsCategoryDto> getCategoriesByBoardId(Long boardId) {
@@ -152,14 +163,13 @@ public class BoardServiceImpl implements BoardService {
     @Transactional
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     @Override
-    public void deleteBoardCategory(Long boardCategoryId, String deleterId, String boardCategoryName) {
-        AdminDto deleter = adminMapper.findByLoginId(deleterId);
-
-        if (!"ROLE_SUPER_ADMIN".equals(deleter.getRoleId()) && !"ROLE_ADMIN".equals(deleter.getRoleId())) {
-            throw new AccessDeniedException("운영자는 삭제할 권한이 없습니다.");
+    public void deleteBoardCategory(Long boardCategoryId, String deleterLoginId) {
+        int count = bbsCategoryMapper.countBoardByCategoryId(boardCategoryId);
+        if (count > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "해당 카테고리에 속한 게시판이 있어 삭제할 수 없습니다.");
         }
-
-        bbsCategoryMapper.logBbsCategoryDeletion(deleterId, boardCategoryName);
+        String boardCategoryName = bbsCategoryMapper.findCategoryNameById(boardCategoryId);
+        bbsCategoryMapper.logBbsCategoryDeletion(deleterLoginId, boardCategoryName);
         bbsCategoryMapper.deleteCategory(boardCategoryId);
     }
 }

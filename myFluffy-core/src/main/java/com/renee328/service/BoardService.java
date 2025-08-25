@@ -32,6 +32,9 @@ public interface BoardService {
     // 모든 게시판 카테고리 조회
     List<BbsCategoryDto> getAllBoardCategories();
 
+    // 카테고리 상세 조회
+    BbsCategoryDto getCategoryByCategoryId(Long boardCategoryId);
+
     // 게시판별 카테고리 목록 조회
     List<BbsCategoryDto> getCategoriesByBoardId(Long boardId);
 
@@ -42,5 +45,5 @@ public interface BoardService {
     void updateBoardCategory(BbsCategoryDto bbsCategoryDto);
 
     // 게시판 카테고리 삭제
-    void deleteBoardCategory(Long boardCategoryId, String deleterId, String boardCategoryName);
+    void deleteBoardCategory(Long boardCategoryId, String deleterLoginId);
 }

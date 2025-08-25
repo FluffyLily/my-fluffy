@@ -8,13 +8,13 @@ import 'vue-toastification/dist/index.css';
 import Toast from 'vue-toastification';
 // Font Awesome 관련 설정
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faHome, faUser, faBell, faPlus, faUsersCog, faThList, faFileAlt } from '@fortawesome/free-solid-svg-icons'
+import { faHome, faUser, faBell, faPlus, faMinus, faUsersCog, faThList, faFileAlt } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { Ckeditor } from '@ckeditor/ckeditor5-vue';
 import router from './router';
 
 // Font Awesome 아이콘을 라이브러리에 추가
-library.add(faHome, faUser, faBell, faPlus, faUsersCog, faThList, faFileAlt)
+library.add(faHome, faUser, faBell, faPlus, faMinus, faUsersCog, faThList, faFileAlt)
 
 const app = createApp(App);
 

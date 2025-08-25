@@ -94,6 +94,13 @@ public class BoardController {
         return ResponseEntity.ok(categories);
     }
 
+    // 게시판 카테고리 상세 조회
+    @GetMapping("/category/{boardCategoryId}")
+    public ResponseEntity<BbsCategoryDto> getCategoryDetails(@PathVariable Long boardCategoryId) {
+        BbsCategoryDto category = boardService.getCategoryByCategoryId(boardCategoryId);
+        return ResponseEntity.ok(category);
+    }
+
     // 게시판별 카테고리 목록 조회
     @GetMapping("/category/{boardId}")
     public ResponseEntity<List<BbsCategoryDto>> getCategoriesByBoardId(@PathVariable Long boardId) {
@@ -110,7 +117,8 @@ public class BoardController {
 
     // 게시판 카테고리 수정
     @PutMapping("/category/{boardCategoryId}")
-    public ResponseEntity<?> updateBoardCategory(@PathVariable Long boardCategoryId, @RequestBody BbsCategoryDto bbsCategoryDto) {
+    public ResponseEntity<?> updateBoardCategory(@PathVariable Long boardCategoryId,
+                                                 @RequestBody BbsCategoryDto bbsCategoryDto) {
         bbsCategoryDto.setBoardCategoryId(boardCategoryId);
         boardService.updateBoardCategory(bbsCategoryDto);
         return ResponseEntity.ok(Map.of("message", "게시판 카테고리가 수정되었습니다."));
@@ -118,8 +126,15 @@ public class BoardController {
 
     // 게시판 카테고리 삭제
     @DeleteMapping("/category/{boardCategoryId}")
-    public ResponseEntity<?> deleteBoardCategory(@PathVariable Long boardCategoryId, @RequestParam String deleterId, @RequestParam String boardCategoryName) {
-        boardService.deleteBoardCategory(boardCategoryId, deleterId, boardCategoryName);
+    public ResponseEntity<?> deleteBoardCategory(@PathVariable Long boardCategoryId,
+                                                 Authentication authentication
+                                                 ) {
+        if (authentication == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        String deleterLoginId = authentication.getName();
+        boardService.deleteBoardCategory(boardCategoryId, deleterLoginId);
         return ResponseEntity.ok(Map.of("message", "게시판 카테고리가 삭제되었습니다."));
     }
 }

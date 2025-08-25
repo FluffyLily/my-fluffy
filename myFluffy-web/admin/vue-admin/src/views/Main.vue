@@ -15,19 +15,19 @@
       @close="showNoticeModal = false" 
     />
     <div class="summary-cards">
-      <div class="card stat-card pink-border">
+      <div class="card stat-card pink-border" @click="goToBoard">
         <h2><span class="emoji-text">🔖</span> 게시판 수</h2>
         <p>{{ boardCount }}개</p>
       </div>
-      <div class="card stat-card mint-border">
+      <div class="card stat-card mint-border" @click="goToManangePost">
         <h2><span class="emoji-text">✏️</span> 게시글 수</h2>
         <p>{{ postSummary.totalCount }}건 / 오늘 {{ postSummary.todayCount }}건</p>
       </div>
-      <div class="card stat-card yellow-border">
+      <div class="card stat-card yellow-border" @click="goToUser">
         <h2><span class="emoji-text">👥</span> 회원 수</h2>
         <p>총 {{ userSummary.totalCount }}명 / 최근 7일 {{ userSummary.weeklyCount }}명</p>
       </div>
-      <div class="card stat-card violet-border">
+      <div class="card stat-card violet-border" @click="goToAdmin">
         <h2><span class="emoji-text">🔧</span> 관리자 수</h2>
         <p>{{ adminCount }}명</p>
       </div>
@@ -36,7 +36,7 @@
     <div class="card-section">
       <div class="card activity-card">
         <h3><span class="emoji-text">📌</span> 최근 게시글</h3>
-        <ul>
+        <ul @click="goToManangePost">
           <li v-for="(post, index) in recentPosts" :key="index">
             <span class="title"><span class="emoji-text">📝</span> {{ post.title }} </span>
             <span class="date">{{ formatDate(post.createdAt) }}</span>
@@ -46,7 +46,7 @@
 
       <div class="card activity-card">
         <h3><span class="emoji-text">🆕</span> 최근 가입 회원</h3>
-        <ul v-if="recentUsers.length > 0">
+        <ul v-if="recentUsers.length > 0" @click="goToUser">
           <li v-for="(user, index) in recentUsers" :key="index">
             <span class="title"><span class="emoji-text">👤</span> {{ user.loginId }}</span>
             <span class="date">{{ formatDate(user.createdAt) }}</span>
@@ -65,10 +65,10 @@
     <div class="card quick-action-card">
       <h3><span class="emoji-text">⚡</span> 빠른 작업</h3>
       <div class="quick-buttons">
-        <button class="btn-add" @click="goToBoard">게시판 생성</button>
-        <button class="btn-post" @click="goToPost">게시글 작성</button>
-        <button class="btn-admin" @click="goToAdmin">관리자 추가</button>
-        <button class="btn-search" @click="goToUser">회원 검색</button>
+        <button class="btn-add" @click="goToBoard">게시판 관리</button>
+        <button class="btn-post" @click="goToWritePost">게시글 작성</button>
+        <button class="btn-admin" @click="goToAdmin">관리자 관리</button>
+        <button class="btn-search" @click="goToUser">회원 관리</button>
       </div>
     </div>
   </div>
@@ -196,7 +196,11 @@ const goToBoard = () => {
   router.push({ name: 'Board' })
 }
 
-const goToPost = () => {
+const goToManangePost = () => {
+  router.push({ name: 'PostManagement' })
+}
+
+const goToWritePost = () => {
   router.push({ name: 'WritePost' })
 }
 

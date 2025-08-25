@@ -10,8 +10,17 @@ public interface BbsCategoryMapper {
     // 모든 게시판 카테고리 조회
     List<BbsCategoryDto> selectAllCategories();
 
+    // 카테고리 상세 조회
+    BbsCategoryDto selectCategoryByCategoryId(Long boardCategoryId);
+
     // 게시판별 카테고리 목록 조회
     List<BbsCategoryDto> selectCategoriesByBoardId(Long boardId);
+
+    // 게시판 카테고리명 조회
+    String findCategoryNameById(Long boardCategoryId);
+
+    // 게시판 카테고리에 속한 게시판 수 조회
+    int countBoardByCategoryId(Long boardCategoryId);
 
     // 게시판 카테고리 추가
     void insertCategory(BbsCategoryDto bbsCategoryDto);

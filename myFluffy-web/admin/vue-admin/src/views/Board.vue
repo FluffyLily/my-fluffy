@@ -2,23 +2,27 @@
   <div class="page-wrapper">
     <div class="page-container">
       <div class="page-content">
-        <!-- 게시판 카테고리 필터 영역 -->
-        <div class="category-filter-container">
+        <!-- 게시판 카테고리 영역 -->
+        <div class="category-container">
           <h2>게시판 카테고리</h2>
-          <button class="btn mb-2" @click="openCreateCategoryModal">
-            <font-awesome-icon :icon="['fas', 'plus']" />
-          </button>
+          <div class="category-management">
+            <button class="btn mb-3" @click="openCreateCategoryModal">
+              <font-awesome-icon :icon="['fas', 'plus']" />
+            </button>
+            <button class="btn mb-3" @click="openManageCategoryModal">
+              <font-awesome-icon :icon="['fas', 'minus']" />
+            </button>
+          </div>
           <div class="category-list">
-            <button class="category-button" 
-            :class="allCategory.colorClass" 
-            @click="showAllBoards"
-            >
+            <button class="category-button"
+                    :class="[allCategory.colorClass, { selected: selectedCategoryId === null }]"
+                    @click="showAllBoards">
               # 전체
             </button>
             <button 
               v-for="(category, index) in categories" 
               :key="index"
-              :class="['category-button', category.colorClass]"
+              :class="['category-button', category.colorClass, { selected: selectedCategoryId === category.boardCategoryId }]"
               @click="selectCategory(category.boardCategoryId)"
             >
               # {{ category.boardCategoryName }}
@@ -26,22 +30,22 @@
           </div>
         </div>
         <!-- 게시판 목록 영역 -->
-        <div class="menu-container">
+        <div class="board-list-container">
           <h2>게시판 목록</h2>
-          <div class="menu-actions mb-3">
+          <div class="board-open mb-3">
             <button class="btn" @click="openCreateBoardModal">
               <font-awesome-icon :icon="['fas', 'plus']" style="color: var(--button-add-color)"/>
             </button>
           </div>
-          <div class="menu-list">
-            <div v-if="boardList.length === 0" class="empty-message">
+          <div class="board-list-content">
+            <div v-if="boards.length === 0" class="empty-message">
               아직 게시판이 없습니다.
             </div>
             <div v-else>
               <ul class="board-list">
-                <li v-for="board in boardList" :key="board.boardId || board.boardName" 
+                <li v-for="board in boards" :key="board.boardId || board.boardName" 
                     :class="{ active: board.isActive }">
-                  <span @click="goToBoardDetail(board)" style="cursor: pointer;">{{ board.boardName }}</span>
+                  <span @click="selectBoard(board)" style="cursor: pointer;">{{ board.boardName }}</span>
                 </li>
               </ul>
             </div>
@@ -49,17 +53,17 @@
         </div>
         <!-- 게시판 정보 영역 -->
         <div class="board-detail-container">
-          <div v-if="selectedBoard?.boardId" >
-            <h2>{{ selectedBoard.boardName }} 게시판 정보</h2>
+          <div v-if="boardDetail">
+            <h2>{{ boardDetail?.boardName }} 게시판 정보</h2>
             <div class="board-detail-content">
-              <p><strong>카테고리 :</strong> {{ selectedBoard.categories?.[0]?.boardCategoryName || '없음' }}</p>
-              <p><strong>등록한 관리자 :</strong> {{ selectedBoard.createdByLoginId }}</p>
-              <p><strong>등록한 날 :</strong> {{ formatDate(selectedBoard.createdAt) }}</p>
-              <p><strong>수정한 관리자 :</strong> {{ selectedBoard.updatedByLoginId }}</p>
-              <p><strong>수정한 날 :</strong> {{ formatDate(selectedBoard.updatedAt) }}</p>
-              <button class="btn btn-warning me-2" @click="editBoardMenu(selectedBoard)">수정</button>
+              <p><strong>카테고리 :</strong> {{ boardDetail?.boardCategoryName || '없음' }}</p>
+              <p><strong>등록한 관리자 :</strong> {{ boardDetail?.createdByLoginId }}</p>
+              <p><strong>등록한 날 :</strong> {{ formatDate(boardDetail?.createdAt) }}</p>
+              <p><strong>수정한 관리자 :</strong> {{ boardDetail?.updatedByLoginId }}</p>
+              <p><strong>수정한 날 :</strong> {{ formatDate(boardDetail?.updatedAt) }}</p>
+              <button class="btn btn-warning me-2" @click="openEditBoardModal">수정</button>
               <button v-if="canDeleteBoard" class="btn btn-danger"
-                @click="confirmDeleteBoardMenu(selectedBoard)">
+                @click="openDeleteBoardModal">
                 삭제
               </button>
             </div>
@@ -94,12 +98,43 @@
               </div>
               <div class="modal-body">
                 <label class="form-label">카테고리 이름</label>
-                <input v-model="newCategory.boardCategoryName" ref="newBoardCategoryInput" placeholder="새로운 카테고리 입력" class="form-control mb-2"/>
+                <input v-model="newCategory.boardCategoryName" ref="modalInputRef" placeholder="새로운 카테고리 입력" class="category-input"/>
                 <small v-if="categoryNameError" class="text-danger">{{ categoryNameError }}</small>
               </div>
               <div class="modal-footer">
                 <button class="btn btn-primary" @click="createBoardCategory" :disabled="!isCategoryValid">등록하기</button>
                 <button class="btn btn-secondary" @click="closeCreateCategoryModal">닫기</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 카테고리 관리 모달 -->
+        <div v-if="showManageCategoryModal" class="modal fade show d-flex justify-content-center align-items-center category-modal" style="display: block;" tabindex="-1" role="dialog">
+          <div class="modal-dialog modal-dialog-centered custom-modal-lg" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title category-title">선택한 카테고리 관리</h5>
+                <button type="button" class="btn-close" @click="closeManageCategoryModal"></button>
+              </div>
+              <div class="modal-body" v-if="selectedCategoryId">
+                <label class="form-label">카테고리 이름</label>
+                <input
+                  v-model="editCategory.boardCategoryName"
+                  placeholder="카테고리를 입력하세요."
+                  class="category-input"
+                  ref="modalInputRef"
+                />
+                <div v-if="categoryManageError" class="text-danger">{{ categoryManageError }}</div>
+              </div>  
+              <div class="modal-footer">
+                <button
+                  class="btn btn-warning btn-edit"
+                  :disabled="!isEditCategoryValid"
+                  @click="updateCategory"
+                >
+                  수정
+                </button>
+                <button class="btn btn-danger" @click="deleteCategory">삭제</button>
               </div>
             </div>
           </div>
@@ -114,10 +149,10 @@
               </div>
               <div class="modal-body">
                 <label class="form-label">게시판 이름</label>
-                <input v-model="newBoard.boardName" ref="newBoardNameInput" placeholder="새로운 게시판 입력" class="form-control mb-2" />
+                <input v-model="newBoard.boardName" ref="modalInputRef" placeholder="새로운 게시판 입력" class="form-control mb-4" />
                 <label class="form-label">카테고리</label>
                 <select v-model="newBoard.boardCategoryId" class="form-select mb-2">
-                  <option disabled value="">카테고리 선택</option>
+                  <option disabled :value="null">카테고리 선택</option>
                   <option v-for="category in categories" :key="category.boardCategoryId" :value="category.boardCategoryId">
                     {{ category.boardCategoryName }}
                   </option>
@@ -137,23 +172,23 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title edit-title">게시판 수정</h5>
-                <button type="button" class="btn-close" @click="showEditBoardModal = false"></button>
+                <button type="button" class="btn-close" @click="closeEditBoardModal"></button>
               </div>
               <div class="modal-body">
                   <label class="form-label d-block">게시판 이름</label>
-                  <input v-model="editBoard.boardName" placeholder="게시판 이름을 입력하세요" class="form-control mb-2"/>
+                  <input v-model="editBoard.boardName" ref="modalInputRef" placeholder="게시판 이름을 입력하세요" class="form-control mb-2"/>
+                  <small v-if="boardEditError" class="text-danger">{{ boardEditError }}</small>
                   <label class="form-label d-block">카테고리</label>
                   <select v-model="editBoard.boardCategoryId" class="form-select mb-2">
-                    <option disabled value="">카테고리 선택</option>
+                    <option disabled :value="null">카테고리 선택</option>
                     <option v-for="category in categories" :key="category.boardCategoryId" :value="category.boardCategoryId">
                       {{ category.boardCategoryName }}
                     </option>
                   </select>
-                  <small v-if="boardEditError" class="text-danger">{{ boardEditError }}</small>
               </div>
               <div class="modal-footer">
-                <button class="btn btn-warning" @click="updateBoard">수정</button>
-                <button class="btn btn-secondary" @click="showEditBoardModal = false">닫기</button>
+                <button class="btn btn-warning" @click="updateBoard" :disabled="!isEditBoardValid">수정</button>
+                <button class="btn btn-secondary" @click="closeEditBoardModal">닫기</button>
               </div>
             </div>
           </div>
@@ -164,12 +199,12 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title delete-title">게시판 삭제</h5>
-                <button type="button" class="btn-close" @click="closeDeleteModal"></button>
+                <button type="button" class="btn-close" @click="closeDeleteBoardModal"></button>
               </div>
               <div class="modal-body">
                 <div class="mb-3">
                   <div class="confirm-text">
-                    <strong>"{{ selectedBoard.boardName }}" 게시판을 정말 삭제하시겠습니까?</strong>
+                    <strong>"{{ boardDetail?.boardName }}" 게시판을 정말 삭제하시겠습니까?</strong>
                     <div class="note">(게시글이 있으면 삭제할 수 없습니다.)</div>
                     <div class="sub">
                       <span class="emoji" aria-hidden="true">⚠️</span>
@@ -181,7 +216,7 @@
                     <input
                       type="password"
                       v-model="deletePassword"
-                      ref="deletePasswordInput"
+                      ref="modalInputRef"
                       class="form-control"
                       @keyup.enter="deletePassword && deleteBoard()"
                     />
@@ -191,7 +226,7 @@
               </div>
               <div class="modal-footer">
                 <button class="btn btn-danger" @click="deleteBoard">삭제</button>
-                <button class="btn btn-secondary" @click="closeDeleteModal">닫기</button>
+                <button class="btn btn-secondary" @click="closeDeleteBoardModal">닫기</button>
               </div>
             </div>
           </div>
@@ -217,13 +252,17 @@ const toast = useToast();
 const userId = authStore.userId;
 
 // 게시판 & 카테고리 목록
-const boardList = ref([]);
+const boards = ref([]);
 const categories = ref([]);
-const filteredBoards = ref([]);
 const allCategory = reactive({
   name: '전체',
   colorClass: ''
 });
+
+const selectedCategoryId = ref(null);
+const selectedBoardId = ref(null);
+const boardDetail = ref(null);
+const isBoardUpdated = ref(false);
 
 // 게시글 목록
 const posts = ref([]);
@@ -237,114 +276,184 @@ const searchCondition = reactive({
   limit: 5
 })
 
-// 게시판 & 카테고리 생성
+// 새로운 게시판 & 카테고리 값 세팅
 const newCategory = ref({
   boardCategoryName: '',
   createdBy: userId,
-  createdAt: new Date().toISOString(),
+  createdAt: null,
   updatedBy: userId,
-  updatedAt: new Date().toISOString()
+  updatedAt: null
 });
+
 const newBoard = ref({
   boardName: '',
   boardCategoryId: '',
   createdBy: userId,
-  createdAt: new Date().toISOString(),
+  createdAt: null,
   updatedBy: userId,
-  updatedAt: new Date().toISOString()
+  updatedAt: null
 });
-const newBoardCategoryInput = ref(null);
-const newBoardNameInput = ref(null);
+
+// 모달 열기
 const showCreateCategoryModal = ref(false);
+const showManageCategoryModal = ref(false);
 const showCreateBoardModal = ref(false);
+const showEditBoardModal = ref(false);
+const showDeleteBoardModal = ref(false);
+
+// 모달 입력창 - 포커싱 용도
+const modalInputRef = ref(null);
+
+// 모달 내 메세지 필드
 const categoryNameError = ref(null);
+const categoryManageError = ref(null);
 const boardNameError = ref(null);
+const boardEditError = ref(null);
+const deletePassword = ref('');
+const deleteError = ref(null);
 
-// 선택 상태 구분
-const selectedBoard = reactive({
-  boardId: null,
-  boardName: '',
-  createdAt: '',
-  createdBy: null,
-  createdByLoginId: '',
-  updatedAt: '',
-  updatedBy: null,
-  updatedByLoginId: '',
-  categories: []
+// 게시판 카테고리 수정용 값 복사
+const editCategory = reactive({
+  boardCategoryId: null,
+  boardCategoryName: '',
+  updatedAt: null,
+  updatedBy: userId
 });
-const selectedCategory = ref(null);
-const selectedBoardId = ref(null);
 
-// 게시판 수정 관련
-const editBoard = ref({
+// 게시판 수정용 값 복사
+const editBoard = reactive({
   boardId: null,
   boardName: '',
   boardCategoryId: null,
   boardCategoryName: '',
-  updatedBy: authStore.userId,
-  updatedAt: new Date().toISOString()
+  updatedAt: null,
+  updatedBy: userId
 });
-const boardEditError = ref(null);
-const showEditBoardModal = ref(false);
-const isBoardUpdated = ref(false);
 
-// 게시판 삭제 관련
-const deletePassword = ref('');
-const deleteError = ref('');
-const deletePasswordInput = ref(null);
-const showDeleteBoardModal = ref(false);
-
+// 게시판 삭제 권한 확인
 const canDeleteBoard = computed(() => 
   hasAnyRole(authStore.roleId, ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'])
 );
 
 // 유효성 검사
 const isCategoryValid = computed(() => newCategory.value.boardCategoryName.trim().length > 0);
+const isEditCategoryValid = computed(() => editCategory.boardCategoryName.trim().length > 0);
 const isBoardValid = computed(() =>
   newBoard.value.boardName.trim().length > 0 &&
   newBoard.value.boardCategoryId && newBoard.value.boardCategoryId.toString().trim().length > 0
 );
+const isEditBoardValid = computed(() => 
+  editBoard.boardName.trim().length > 0 &&
+  editBoard.boardCategoryId && editBoard.boardCategoryId.toString().trim().length > 0
+);
 
-// 유틸 & 공통
+// 모달 내 값 초기화
 const resetCreateForm = () => {
   newBoard.value = {
     boardName: '',
     boardCategoryId: '',
     createdBy: userId,
-    createdAt: new Date().toISOString(),
+    createdAt: null,
     updatedBy: userId,
-    updatedAt: new Date().toISOString()
+    updatedAt: null
   };
   newCategory.value = {
     boardCategoryName: '',
     createdBy: userId,
-    createdAt: new Date().toISOString(),
+    createdAt: null,
     updatedBy: userId,
-    updatedAt: new Date().toISOString()
+    updatedAt: null
   };
   categoryNameError.value = null;
   boardNameError.value = null;
 };
 
-const openCreateCategoryModal = async() => {
+// 모달 열기&닫기
+const openCreateCategoryModal = async () => {
   showCreateCategoryModal.value = true;
   await nextTick();
-  newBoardCategoryInput.value?.focus();
+  modalInputRef.value?.focus();
 }
+
 const closeCreateCategoryModal = () => {
   showCreateCategoryModal.value = false;
   resetCreateForm();
 };
-const openCreateBoardModal = async() => {
-  showCreateBoardModal.value = true;
+
+const openManageCategoryModal = async () => {
+  if (!selectedCategoryId.value) {
+    toast.warning("카테고리를 먼저 선택하세요.");
+    return;
+  }
+  const category = categories.value.find(c => c.boardCategoryId === selectedCategoryId.value);
+  if (category) {
+    editCategory.boardCategoryId = category.boardCategoryId;
+    editCategory.boardCategoryName = category.boardCategoryName;
+    editCategory.updatedBy = userId;
+  }
+  showManageCategoryModal.value = true;
   await nextTick();
-  newBoardNameInput.value?.focus();
+  modalInputRef.value?.focus();
 };
+
+const closeManageCategoryModal = () => {
+  showManageCategoryModal.value = false;
+  categoryManageError.value = null;
+};
+
+const openCreateBoardModal = async () => {
+  showCreateBoardModal.value = true;
+  newBoard.value.boardCategoryId = selectedCategoryId.value
+  await nextTick();
+  modalInputRef.value?.focus();
+};
+
 const closeCreateBoardModal = () => {
   showCreateBoardModal.value = false;
   resetCreateForm();
 };
 
+const openEditBoardModal = async () => {
+  if (!selectedBoardId.value) {
+    console.warn("게시판을 먼저 선택하세요.");
+    return;
+  }
+
+  editBoard.boardId = boardDetail.value.boardId;
+  editBoard.boardName = boardDetail.value.boardName;
+  editBoard.boardCategoryId = boardDetail.value.boardCategoryId;
+  editBoard.boardCategoryName = boardDetail.value.boardCategoryName;
+  editBoard.updatedBy = userId;
+
+  showEditBoardModal.value = true;
+  await nextTick();
+  modalInputRef.value?.focus();
+
+};
+
+const closeEditBoardModal = () => {
+  showEditBoardModal.value = false;
+  boardEditError.value = null;
+};
+
+const openDeleteBoardModal = async () => {
+  if (!boardDetail.value) {
+    console.warn("게시판을 먼저 선택하세요.");
+    return;
+  }
+  selectedBoardId.value = boardDetail.value.boardId;
+  showDeleteBoardModal.value = true;
+  await nextTick();
+  modalInputRef.value?.focus();
+};
+  
+const closeDeleteBoardModal = () => {
+  showDeleteBoardModal.value = false;
+  deletePassword.value = '';
+  deleteError.value = null;
+};
+
+// 카테고리 목록 컬러 랜덤 세팅
 const assignRandomColorClass = (category) => {
   const colorClasses = ['color-pink', 'color-avocado', 'color-violet', 'color-seafoam', 'color-honey'];
   category.colorClass = colorClasses[Math.floor(Math.random() * colorClasses.length)];
@@ -356,7 +465,6 @@ const formatDate = (dateString) => {
   return format(new Date(dateString), 'yyyy-MM-dd HH:mm:ss');
 };
 
-// 게시판 목록 및 필터링
 // 게시판 카테고리 목록 가져오기
 const selectAllCategories = async () => {
   try {
@@ -374,76 +482,55 @@ const selectAllCategories = async () => {
 const getBoardList = async () => {
   try {
     const response = await apiClient.get('/board/list');
-    boardList.value = response.data;
-    filteredBoards.value = boardList.value;
+    boards.value = response.data;
     updateActiveBoard();
   } catch (error) {
     console.error('게시판 목록 불러오기 실패:', error);
-    boardList.value = [];
+    boards.value = [];
   }
 };
 
 // 카테고리 선택 시 게시판 목록 필터링
 const selectCategory = async (boardCategoryId) => {
-  selectedCategory.value = boardCategoryId;
+  selectedCategoryId.value = boardCategoryId;
   try {
     const response = await apiClient.get(`/board/list/${boardCategoryId}`);
-    boardList.value = response.data;
+    boards.value = response.data;
     updateActiveBoard();
   } catch (error) {
     console.error('게시판 카테고리 필터링 실패:', error);
   }
 };
 
+// 카테고리 [전체] 선택 시 전체 게시판 목록 조회
 const showAllBoards = async () => {
-  selectedCategory.value = null;
+  selectedCategoryId.value = null;
   await getBoardList();
 };
 
-// 게시판 상세 및 선택
-// 게시판 세부정보 가져오기
-const goToBoardDetail = async (board) => {
+// 게시판 선택 시 상세 정보와 게시글 조회 갱신
+const selectBoard = async (board) => {
   if (!board.boardId) return;
-  if (selectedBoard.boardId === board.boardId) {
-    Object.assign(selectedBoard, {
-      boardId: null,
-      boardName: '',
-      createdAt: '',
-      createdBy: null,
-      createdByLoginId: '',
-      updatedAt: '',
-      updatedBy: null,
-      updatedByLoginId: '',
-      categories: []
-    });
 
+  if (selectedBoardId.value === board.boardId) {
+    // 이미 선택된 게시판을 클릭 -> 선택 해제
     selectedBoardId.value = null;
     searchCondition.boardId = null;
-    await fetchPosts();
-    updateActiveBoard();
-    return;
+    boardDetail.value = null;
+  } else {
+    // 다른 게시판을 클릭 -> 선택
+    selectedBoardId.value = board.boardId;
+    searchCondition.boardId = board.boardId;
+    await fetchBoardDetail(selectedBoardId.value);
   }
-  try {
-    const response = await apiClient.get(`/board/detail/${board.boardId}`);
-    if (response.data) {
-      selectedBoard.boardId = null;
-      await nextTick();
 
-      Object.assign(selectedBoard, response.data);
-      selectedBoardId.value = board.boardId;
-
-      searchCondition.boardId = board.boardId;
-      await fetchPosts();
-    }
-    updateActiveBoard();
-  } catch (error) {
-    console.error('게시판 세부 정보 가져오기 실패:', error);
-  }
+  updateActiveBoard();
+  await fetchPosts();
 };
 
-// 선택한 게시판 활성화하기
+// 선택한 게시판 UI 활성화 갱신
 const updateActiveBoard = () => {
-  boardList.value.forEach(board => {
+  boards.value.forEach(board => {
     board.isActive = selectedBoardId.value !== null && board.boardId === selectedBoardId.value;
   });
 };
@@ -451,14 +538,13 @@ const updateActiveBoard = () => {
 // 게시판 상세 정보 가져오기
 const fetchBoardDetail = async (boardId) => {
   if (!boardId) {
-    console.warn("boardId가 없습니다. URL을 확인하세요.");
+    console.warn("선택된 게시판이 없습니다.");
     return;
   }
   try {
     const response = await apiClient.get(`/board/detail/${boardId}`);
-
     if (response.data) {
-      Object.assign(selectedBoard, response.data);
+      boardDetail.value = response.data;
     }
   } catch (error) {
     console.error('게시판 세부 정보 가져오기 실패:', error);
@@ -466,7 +552,6 @@ const fetchBoardDetail = async (boardId) => {
   }
 };
 
-// 게시판 생성 및 수정
 // 게시판 카테고리 추가
 const createBoardCategory = async () => {
   if (!newCategory.value.boardCategoryName.trim()) {
@@ -476,78 +561,104 @@ const createBoardCategory = async () => {
   if (confirm("새로운 게시판 카테고리를 생성하시겠습니까?")) {
     try {
       await apiClient.post('/board/category', newCategory.value);
+      closeCreateCategoryModal();
+      toast.success("새로운 게시판 카테고리가 추가되었습니다.");
       await selectAllCategories();
-
-      newCategory.value.boardCategoryName = '';
-      showCreateCategoryModal.value = false;
     } catch (error) {
       console.error('카테고리 추가 실패:', error);
     }
   }
 };
 
-// 게시판 추가하기
+// 게시판 카테고리 변경
+const updateCategory = async () => {
+  if (!editCategory.boardCategoryId || !editCategory.boardCategoryName.trim()) {
+    categoryManageError.value = '카테고리 이름을 입력하세요.';
+    return;
+  }
+  try {
+    await apiClient.put(`/board/category/${editCategory.boardCategoryId}`, {
+      boardCategoryName: editCategory.boardCategoryName,
+      updatedBy: userId
+    });
+    closeManageCategoryModal();
+    toast.success("카테고리가 수정되었습니다.");
+    await selectAllCategories();
+  } catch (error) {
+    console.error('카테고리 수정 실패:', error);
+    categoryManageError.value = '카테고리 수정 중 오류가 발생했습니다.';
+  }
+};
+
+// 게시판 카테고리 삭제
+const deleteCategory = async () => {
+  if (confirm("정말 이 카테고리를 삭제하시겠습니까?")) {
+    try {
+      await apiClient.delete(`/board/category/${selectedCategoryId.value}`);
+      closeManageCategoryModal();
+      toast.success("카테고리가 삭제되었습니다.");
+      selectedCategoryId.value = null;
+      await selectAllCategories();
+      await getBoardList();
+    } catch (error) {
+      const status = error?.response?.status;
+      const msg = error?.response?.data?.message;
+
+      if (status === 409) {
+        categoryManageError.value = msg || '해당 카테고리에 속한 게시판이 있어 삭제할 수 없습니다.';
+      } else if (status === 401 || status === 403) {
+        categoryManageError.value = '권한이 없거나 로그인 세션이 만료되었습니다.';
+      } else {
+        categoryManageError.value = '카테고리 삭제 중 오류가 발생했습니다.';
+      }
+
+      console.error('카테고리 삭제 실패:', error);
+    }
+  }
+};
+
+// 게시판 추가
 const createBoard = async () => {
   if (!newBoard.value.boardName.trim()) {
     boardNameError.value = '게시판 이름을 입력하세요.';
     return;
   }
   if (confirm("새로운 게시판을 생성하시겠습니까?")) {
-    newBoard.value.createdAt = new Date().toISOString();
-    newBoard.value.updatedAt = new Date().toISOString();
     try {
       await apiClient.post('/board/create', newBoard.value);
-      await getBoardList();
-      newBoard.value.boardName = '';
-      newBoard.value.boardCategoryId = null;
-      showCreateBoardModal.value = false;
+      closeCreateBoardModal();
       toast.success("새로운 게시판이 추가되었습니다.");
+      await getBoardList();
     } catch (error) {
       console.error('게시판 추가 실패:', error);
     }
   }
 };
 
-// 게시판 세부정보 수정 데이터, 모달 세팅
-const editBoardMenu = (selectedBoard) => {
-  editBoard.value = { 
-    boardId: selectedBoard.boardId,
-    boardName: selectedBoard.boardName,
-    updatedBy: authStore.userId,
-    boardCategoryId: selectedBoard.categories.length ? selectedBoard.categories[0].boardCategoryId : '',
-    boardCategoryName: selectedBoard.categories.length ? selectedBoard.categories[0].boardCategoryName : ''
-  };
-
-  boardEditError.value = null;
-  showEditBoardModal.value = true;
-
-};
-
-// 게시판 수정 사항 업데이트 요청
+// 게시판 수정
 const updateBoard = async () => {
-  if (!editBoard.value.boardName.trim()) {
+  if (!editBoard.boardName.trim()) {
     boardEditError.value = '게시판의 이름을 입력하세요.';
     return;
   }
   if (confirm("게시판을 수정하시겠습니까?")) {
     try {
-      await apiClient.put(`/board/${editBoard.value.boardId}`, {
-        boardName: editBoard.value.boardName,
-        boardCategoryId: editBoard.value.boardCategoryId,
-        updatedBy: editBoard.value.updatedBy
+      await apiClient.put(`/board/${editBoard.boardId}`, {
+        boardName: editBoard.boardName,
+        boardCategoryId: editBoard.boardCategoryId,
+        updatedBy: editBoard.updatedBy
       });
-
-      showEditBoardModal.value = false;
+      closeEditBoardModal();
+      toast.success("게시판이 수정되었습니다.");
       await getBoardList();
       isBoardUpdated.value = true;
-      
     } catch (error) {
       console.error('게시판 수정 실패:', error);
     }
   }
 };
 
-// 게시글 목록 가져오기
+// 게시글 목록 조회
 const fetchPosts = async () => {
   try {
     const response = await apiClient.post('/post/list', searchCondition);
@@ -558,46 +669,33 @@ const fetchPosts = async () => {
   }
 };
 
-// 게시글 관리 페이지로 가기
+// 게시글 관리 페이지로 이동
 const goToPostManagement = () => {
-  if (selectedBoard?.boardId) {
+  if (selectedBoardId.value) {
     router.push({
       name: 'PostManagement',
-      query: { boardId: selectedBoard?.boardId }
+      query: { boardId: selectedBoardId.value }
     });
   } else {
     router.push({ name: 'PostManagement' });
   }
 }
 
-// 게시글 선택 + 게시글 관리 페이지로 가기
+// 게시글 선택하고 게시글 관리 페이지 이동
 const goToPostManagementWithPostId = (postId) => {
   router.push({
     name: 'PostManagement',
     query: {
-      boardId: selectedBoard?.boardId,
+      boardId: selectedBoardId.value,
       focusedPostId: postId
     }
   });
 }
 
-const confirmDeleteBoardMenu = async (board) => {
-  selectedBoardId.value = board.boardId;
-  showDeleteBoardModal.value = true;
-  await nextTick();
-  deletePasswordInput.value?.focus();
-};
-  
-const closeDeleteModal = () => {
-  showDeleteBoardModal.value = false;
-  deletePassword.value = '';
-  deleteError.value = '';
-};
-
-// 게시판 삭제하기
+// 게시판 삭제
 const deleteBoard = async () => {
   if (!selectedBoardId.value) {
-    console.error('삭제할 게시판이 선택되지 않았습니다.');
+    console.warn("게시판을 먼저 선택하세요.");
     return;
   }
   if (!deletePassword.value.trim()) {
@@ -608,25 +706,13 @@ const deleteBoard = async () => {
     await apiClient.delete(`/board/${selectedBoardId.value}`, {
       data: { password: deletePassword.value }
     });
-
-    showDeleteBoardModal.value = false;
-    deletePassword.value = '';
+    closeDeleteBoardModal();
     selectedBoardId.value = null;
-    await getBoardList();
-    Object.assign(selectedBoard, {
-      boardId: null,
-      boardName: '',
-      createdAt: '',
-      createdBy: null,
-      createdByLoginId: '',
-      updatedAt: '',
-      updatedBy: null,
-      updatedByLoginId: '',
-      categories: []
-    });
     searchCondition.boardId = null;
-    updateActiveBoard();
+    boardDetail.value = null;
     toast.success("게시판이 삭제되었습니다.");
+    await getBoardList();
+    updateActiveBoard();
     await fetchPosts();
 
   } catch (error) {
@@ -638,7 +724,7 @@ const deleteBoard = async () => {
         deletePassword.value = '';
         await nextTick();
         deleteError.value = '비밀번호가 일치하지 않습니다.';
-        deletePasswordInput.value?.focus(); 
+        modalInputRef.value?.focus(); 
       } else {
         deleteError.value = msg || '요청이 올바르지 않습니다.';
       }
@@ -671,14 +757,14 @@ onMounted(() => {
 // 게시판 내용 업데이트 감지
 watch(isBoardUpdated, async (newValue) => {
   if (newValue) {
-    await fetchBoardDetail(editBoard.value.boardId);
+    await fetchBoardDetail(editBoard.boardId);
     isBoardUpdated.value = false;
   }
 });
 
 // 사용자가 비밀번호 입력을 다시 시작하면 에러 메시지 제거
 watch(deletePassword, () => {
-    deleteError.value = '';
+    deleteError.value = null;
 });
 </script>
 
@@ -714,8 +800,8 @@ watch(deletePassword, () => {
       align-items: stretch;
       min-height: 600px;
 
-      .category-filter-container,
-      .menu-container,
+      .category-container,
+      .board-list-container,
       .board-detail-container {
         height: 100%;
         display: flex;
@@ -727,7 +813,7 @@ watch(deletePassword, () => {
         box-shadow: 0 0 10px var(--shadow-color);
       }
 
-      .menu-container {
+      .board-list-container {
         flex: 1.5;
         border: 2px solid var(--avocado-frost);
 
@@ -738,7 +824,7 @@ watch(deletePassword, () => {
           margin-bottom: 15px;
         }
 
-        .menu-actions {
+        .board-open {
           display: flex;
           justify-content: center;
           margin-bottom: 1rem;
@@ -776,7 +862,7 @@ watch(deletePassword, () => {
           }
         }
 
-        .menu-list {
+        .board-list-content {
           .empty-message {
             text-align: center;
             padding: 2.5rem 0;
@@ -789,7 +875,7 @@ watch(deletePassword, () => {
         }
       }
 
-      .category-filter-container {
+      .category-container {
         flex: 1;
         border: 2px solid var(--peach-sherbet);
         box-shadow: 0 4px 10px var(--shadow-color);
@@ -826,6 +912,10 @@ watch(deletePassword, () => {
 
             &:hover {
               opacity: 0.8;
+            }
+            &.selected {
+              border: 2px solid var(--highlight-yellow);
+              box-sizing: border-box;
             }
           }
         }
@@ -934,76 +1024,127 @@ p {
   margin: 5px 0;
 }
 
-// ===== Modal 공통 스타일 =====
-.custom-modal-lg,
-.modal-dialog {
-  max-width: 500px !important;
-  width: 100%;
-}
+// ===== 모달 공통 스타일 =====
+.modal {
+  .modal-dialog {
+    max-width: 500px !important;
+    width: 100%;
+  }
 
-.modal-header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 16px 20px;
-  .modal-title {
-    font-size: 1.6rem;
-    font-weight: 600;
+  .modal-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     text-align: center;
-    flex: 1;
-    margin: 0;
-  }
-  .category-title {
-    color: var(--peach-sherbet);
-  }
-  .board-title {
-    color: var(--avocado-frost);
-  }
-  .edit-title {
-    color: var(--button-warning-color);
-  }
-  .delete-title {
-    color: var(--button-danger-color);
-  }
-}
-
-.modal-body {
-  padding: 20px;
-  text-align: center;
-  label {
-    font-size: 1rem;
-    font-weight: 500;
-    display: block;
-    margin-bottom: 10px;
-    text-align: center;
-  }
-}
-
-.modal-footer {
-  display: flex;
-  .btn-primary {
-    background-color: var(--button-add-color);
-    border-color: var(--button-add-color);
-    transition: background-color 0.3s, border-color 0.3s;
-    &:disabled {
-      background-color: var(--button-hover-add);
-      cursor: not-allowed;
-      filter: brightness(85%);
-      pointer-events: none;
+    padding: 16px 20px;
+    .modal-title {
+      font-size: 1.6rem;
+      font-weight: 600;
+      text-align: center;
+      flex: 1;
+      margin: 0;
     }
-    &:hover {
-      background-color: var(--button-hover-add);
-      border-color: var(--button-hover-add);
+    .category-title {
+      color: var(--peach-sherbet);
+    }
+    .board-title {
+      color: var(--avocado-frost);
+    }
+    .edit-title {
+      color: var(--button-warning-color);
+    }
+    .delete-title {
+      color: var(--button-danger-color);
     }
   }
-  .btn-secondary {
-    background-color: var(--button-close-color);
-    border-color: var(--button-close-color);
-    transition: background-color 0.3s, border-color 0.3s;
-    &:hover {
-      background-color: var(--button-hover-close);
-      border-color: var(--button-hover-close);
+
+  .modal-body {
+    padding: 20px;
+    text-align: center;
+    label {
+      font-size: 1rem;
+      font-weight: 500;
+      display: block;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    input {
+      width: 100%;
+      padding: 6px 10px;
+      margin-bottom: 12px;
+    }
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: center;
+
+    .btn {
+      padding: 6px 16px;
+      border-radius: 6px;
+      white-space: nowrap;
+
+      &.btn-edit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-primary {
+        background-color: var(--button-add-color);
+        border-color: var(--button-add-color);
+        transition: background-color 0.3s, border-color 0.3s;
+        &:disabled {
+          background-color: var(--button-hover-add);
+          cursor: not-allowed;
+          filter: brightness(85%);
+          pointer-events: none;
+        }
+        &:hover {
+          background-color: var(--button-hover-add);
+          border-color: var(--button-hover-add);
+        }
+      }
+      .btn-secondary {
+        background-color: var(--button-close-color);
+        border-color: var(--button-close-color);
+        transition: background-color 0.3s, border-color 0.3s;
+        &:hover {
+          background-color: var(--button-hover-close);
+          border-color: var(--button-hover-close);
+        }
+      }
+    }
+  }
+}
+
+// ===== 카테고리 관리 모달 =====
+.category-modal {
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;  // 세로 중앙
+    align-items: center;      // 가로 중앙
+
+    input.category-input {
+      width: 60%;
+      margin-bottom: 12px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #ced4da;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      box-sizing: border-box;
+      font-size: 1rem;
+      background-color: #fff;
+
+      &:focus {
+        border-color: var(--highlight-mint);
+        box-shadow: 0 0 0 0.2rem rgba(76, 176, 161, 0.25);
+        outline: none;
+      }
+    }
+
+    .text-danger {
+      margin-top: 8px;
     }
   }
 }
@@ -1049,8 +1190,6 @@ p {
   .password-input {
     max-width: 320px;
     margin: 0 auto;
-
-    .form-control { width: 100%; }
   }
 }
 
