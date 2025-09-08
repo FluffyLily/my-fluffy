@@ -46,7 +46,6 @@ myFluffy/
 각 모듈별 README 참고:
 
 - [myFluffy-web/admin](./myFluffy-web/admin/README.md)
-- [myFluffy-web/front](./myFluffy-web/front/README.md)
 
 ---
 
@@ -65,6 +64,6 @@ myFluffy/
 
 ## TODO
 
-- [✔] 사용자 프론트(front) 개발 시작
-- [✔] OAuth 로그인 연동 (Google, Kakao)
+- [ ] 사용자 프론트(front) 개발 시작
+- [ ] OAuth 로그인 연동 (Google, Kakao)
 - [ ] 관리자 시스템 회원 관리 기능 확장 및 고도화
