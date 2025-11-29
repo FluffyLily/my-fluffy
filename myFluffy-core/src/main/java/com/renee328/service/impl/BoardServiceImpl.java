@@ -9,7 +9,6 @@ import com.renee328.mapper.BoardMapper;
 import com.renee328.mapper.PostMapper;
 import com.renee328.service.BoardService;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
