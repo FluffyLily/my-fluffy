@@ -47,7 +47,7 @@ apiClient.interceptors.response.use(
             newConfig.headers["Authorization"] = `Bearer ${newAccessToken}`;
             return apiClient(newConfig);
           } else {
-            throw new Error("Refresh Token으로 Access Token을 얻을 수 없습니다.");
+            throw new Error("Access Token을 재발급할 수 없습니다.");
           }
         } catch (refreshError) {
           console.error("토큰 갱신 실패", refreshError);

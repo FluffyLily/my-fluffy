@@ -3,8 +3,7 @@ import { jwtDecode } from 'jwt-decode';
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
-    accessToken: localStorage.getItem("accessToken") || null,
-    refreshToken: localStorage.getItem("refreshToken") || null,
+    accessToken: null,
     userId: null,
     loginId: null,
     roleId: null
@@ -12,42 +11,22 @@ export const useAuthStore = defineStore("auth", {
   actions: {
     setAccessToken(accessToken) {
       this.accessToken = accessToken;
-      localStorage.setItem("accessToken", accessToken);
 
       try {
-        const decoded = jwtDecode(accessToken);
-        this.userId = decoded.userId;
-      } catch (e) {
-        console.error("JWT 디코딩 실패:", e);
-        this.userId = null;
+        const decodedToken = jwtDecode(accessToken);
+          this.userId = decodedToken.userId;
+          this.loginId = decodedToken.sub;
+          this.roleId = decodedToken.role;
+          
+      } catch {
+        this.clearAccessToken();
       }
     },
+
     clearAccessToken() {
-      this.accessToken = null;
-      localStorage.removeItem("accessToken");
-    },
-    setRefreshToken(refreshToken) {
-      this.refreshToken = refreshToken;
-    },
-    clearRefreshToken() {
-      this.refreshToken = null;
-    },
-    setUserId(userId) {
-      this.userId = userId;
-    },
-    clearUserId() {
+      this.accessToken = null
       this.userId = null;
-    },
-    setLoginId(loginId) {
-      this.loginId = loginId;
-    },
-    clearLoginId() {
       this.loginId = null;
-    },
-    setRoleId(roleId) {
-      this.roleId = roleId;
-    },
-    clearRoleId() {
       this.roleId = null;
     }
   },

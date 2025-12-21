@@ -128,8 +128,6 @@ const logout = async () => {
     await apiClient.post("/auth/logout");
     delete apiClient.defaults.headers.common["Authorization"];
     authStore.clearAccessToken();
-    authStore.clearRefreshToken();
-    authStore.clearUserId();
     await router.push("/");
   } catch (error) {
     console.error("로그아웃 실패: ", error);

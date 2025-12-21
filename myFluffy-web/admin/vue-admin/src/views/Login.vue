@@ -26,7 +26,6 @@ import { ref, nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import apiClient from "../api/axios";
 import { useAuthStore } from '../stores/auth';
-import { jwtDecode } from 'jwt-decode';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -54,23 +53,14 @@ const login = async () => {
 
     const accessToken = response.data.accessToken;
 
-    if (accessToken) {
-      authStore.setAccessToken(accessToken);
-
-      const decodedToken = jwtDecode(accessToken);
-      const { userId, sub: loginId, role: roleId } = decodedToken;
-      authStore.setUserId(userId);
-      authStore.setLoginId(loginId);
-      authStore.setRoleId(roleId);
-      return true;
-      
-    } else {
+    if (!accessToken) {
       throw new Error("Access Token이 제공되지 않았습니다.");
     }
-  } catch (error) {
-    console.error("로그인 요청 에러:", error);
-    console.error("에러 응답 데이터:", error.response?.data); 
 
+    authStore.setAccessToken(accessToken);
+    return true;
+
+  } catch (error) {
     if (error.response?.status === 403) {
       errorMessage.value = "비활성화된 계정입니다. 다른 관리자에게 문의하세요.";
     } else if (error.response?.status === 401) {

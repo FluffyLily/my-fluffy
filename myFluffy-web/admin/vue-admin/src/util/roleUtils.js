@@ -2,7 +2,10 @@ import { computed } from 'vue';
 
 // 관리자 권한 레벨 확인
 export const hasAnyRole = (userRoleId, allowedRoles) => {
-  return allowedRoles.includes(userRoleId);
+  const userLevel = getRoleLevel(userRoleId);
+  return allowedRoles.some(role =>
+    getRoleLevel(role) <= userLevel
+  );
 };
 
 // 권한 계층 정의
