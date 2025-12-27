@@ -28,6 +28,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+
+        return path.startsWith("/api/auth/login")
+                || path.startsWith("/api/auth/refresh")
+                || path.startsWith("/assets/")
+                || path.startsWith("/uploads/")
+                || path.equals("/index.html");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
@@ -36,15 +47,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
 
         log.debug("접속 로그 - IP: {}, Agent: {}, Path: {}", ip, agent, path);
-
-        if (path.startsWith("/api/auth/login")
-                || path.startsWith("/api/auth/refresh")
-                || path.startsWith("/assets/")
-                || path.startsWith("/uploads/")
-                || path.equals("/index.html")) {
-            chain.doFilter(request, response);
-            return;
-        }
 
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
             chain.doFilter(request, response);

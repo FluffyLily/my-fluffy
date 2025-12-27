@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,6 +33,9 @@ public class SecurityConfig {
 
     @Value("${cors.allowed.origin}")
     private String allowedOrigin;
+
+    @Value("${security.debug}")
+    private boolean securityDebug;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenService jwtTokenService) {
@@ -72,6 +76,15 @@ public class SecurityConfig {
                 );
 
         return http.build();
+    }
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return web -> {
+            if (securityDebug) {
+                web.debug(true);
+            }
+        };
     }
 
     @Bean

@@ -51,6 +51,7 @@ security:
     secret-key: ${JWT_SECRET_KEY}
     access-token-expiration: 900000
     refresh-token-expiration: 604800000
+  debug: false
 
 cors:
   allowed:

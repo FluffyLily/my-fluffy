@@ -52,8 +52,10 @@
     </springProfile>
 
     <!-- 개발/로컬 기본 -->
-    <springProfile name="default,local,dev">
-        <root level="DEBUG">
+    <springProfile name="default,local,dev,admin">
+        <logger name="org.springframework.security" level="DEBUG"/>
+        <logger name="org.springframework.security.web.debug" level="DEBUG"/>
+        <root level="INFO">
             <appender-ref ref="CONSOLE"/>
         </root>
     </springProfile>
