@@ -1,9 +1,10 @@
 package com.renee328.admin.controller;
 
 
+import com.renee328.admin.repository.TokenRepository;
+import com.renee328.admin.util.CookieUtil;
 import com.renee328.dto.LoginRequest;
 import com.renee328.dto.LoginResponse;
-import com.renee328.admin.repository.TokenRepository;
 import com.renee328.service.AuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,7 +13,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Arrays;
@@ -40,13 +44,11 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "계정이 비활성화되었습니다. 다른 관리자에게 활성화 요청을 해주세요."));
             }
 
-            Cookie refreshTokenCookie = new Cookie("refreshToken", loginResponse.getRefreshToken());
-            refreshTokenCookie.setHttpOnly(true);
-            refreshTokenCookie.setSecure(true);
-            refreshTokenCookie.setPath("/");
-            refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60); // 7일간 유지
-
-            response.addCookie(refreshTokenCookie);
+            CookieUtil.addRefreshToken(
+                    response,
+                    loginResponse.getRefreshToken(),
+                    7 * 24 * 60 * 60
+            );
 
             return ResponseEntity.ok(Map.of("accessToken", loginResponse.getAccessToken()));
         } catch (ResponseStatusException e) {
@@ -67,13 +69,7 @@ public class AuthController {
         // Redis에서 저장된 액세스 토큰 및 리프레시 토큰 삭제
         tokenRepository.deleteTokens(loginId);
 
-        Cookie refreshTokenCookie = new Cookie("refreshToken", null);
-        refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(true);
-        refreshTokenCookie.setPath("/");
-        refreshTokenCookie.setMaxAge(0);
-
-        response.addCookie(refreshTokenCookie);
+        CookieUtil.clearRefreshToken(response);
 
         return ResponseEntity.ok(Map.of("message", "로그아웃되었습니다."));
     }
@@ -99,13 +95,11 @@ public class AuthController {
             LoginResponse newTokens = authService.refreshTokens(refreshToken);
 
             // 새로운 리프레쉬 토큰을 쿠키에 저장
-            Cookie refreshTokenCookie = new Cookie("refreshToken", newTokens.getRefreshToken());
-            refreshTokenCookie.setHttpOnly(true);
-            refreshTokenCookie.setSecure(true);
-            refreshTokenCookie.setPath("/");
-            refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60);
-
-            response.addCookie(refreshTokenCookie);
+            CookieUtil.addRefreshToken(
+                    response,
+                    newTokens.getRefreshToken(),
+                    7 * 24 * 60 * 60
+            );
 
             return ResponseEntity.ok(Map.of("accessToken", newTokens.getAccessToken()));
         } catch (RuntimeException e) {

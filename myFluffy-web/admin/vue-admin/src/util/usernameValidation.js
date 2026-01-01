@@ -17,8 +17,7 @@ export const validateUsername = async (loginId) => {
     
     try {
         const response = await apiClient.get("/admin/check-username", {
-        params: { loginId },
-        headers: { Authorization: `Bearer ${authStore.accessToken}` }
+        params: { loginId }
         });
 
         return response.data ? "사용 가능한 아이디입니다." : "이미 존재하는 아이디입니다.";

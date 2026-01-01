@@ -146,8 +146,6 @@ const fetchRecentPosts = async () => {
       offset: 0,
       limit: 3,
       sort: 'recent'
-    }, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
     });
 
     recentPosts.value = response.data.posts.map(post => ({
@@ -167,8 +165,6 @@ const fetchRecentUsers = async () => {
       offset: 0,
       limit: 3,
       sort: 'recent'
-    }, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
     });
 
     recentUsers.value = response.data.users.map(user => ({

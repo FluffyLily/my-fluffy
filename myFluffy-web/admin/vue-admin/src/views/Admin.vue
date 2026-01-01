@@ -323,9 +323,7 @@ const resetNewAdminForm = () => {
 // 관리자 목록 불러오기
 const fetchAdmins = async () => {
   try {
-    const response = await apiClient.get('/admin/list', {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` }
-    });
+    const response = await apiClient.get('/admin/list');
     admins.value = response.data;
   } catch (error) {
     console.error("Error response:", error.response);
@@ -348,9 +346,7 @@ const createAdmin = async () => {
   newAdmin.value.createdAt = new Date().toISOString();;
   newAdmin.value.updatedAt = new Date().toISOString();;
   
-  await apiClient.post('/admin/create', newAdmin.value, {
-    headers: { Authorization: `Bearer ${authStore.accessToken}` }
-  });
+  await apiClient.post('/admin/create', newAdmin.value);
   showCreateModal.value = false;
   fetchAdmins();
   }
